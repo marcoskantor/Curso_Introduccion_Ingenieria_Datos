@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net" agent="Marcos Kantor" version="24.0.0">
+  <diagram id="oltp-er" name="OLTP - Modelo ER">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title1" value="TP2 - Modelo Entidad-Relacion (OLTP) - Marcos Kantor" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="10" width="600" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="t1" value="&lt;b&gt;Tiempo&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_tiempo&lt;br&gt;fecha&lt;br&gt;anio&lt;br&gt;trimestre&lt;br&gt;mes&lt;br&gt;dia_semana&lt;br&gt;es_fin_de_semana&lt;br&gt;es_festivo&lt;br&gt;fraction_date&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="230" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="ec1" value="&lt;b&gt;Evento_CAMEO&lt;/b&gt; (Puente)&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_evento_cameo (Surrogate)&lt;br&gt;FK id_evento&lt;br&gt;FK event_code&lt;br&gt;peso_relevancia&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="470" y="80" width="280" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="cc1" value="&lt;b&gt;Codigo_CAMEO&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK event_code&lt;br&gt;event_base_code&lt;br&gt;event_root_code&lt;br&gt;descripcion&lt;br&gt;quad_class&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="860" y="80" width="250" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1" value="&lt;b&gt;Actor&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_actor (Surrogate)&lt;br&gt;UK actor_code (Natural)&lt;br&gt;actor_name&lt;br&gt;country_code&lt;br&gt;known_group_code&lt;br&gt;ethnic_code&lt;br&gt;religion1_code&lt;br&gt;religion2_code&lt;br&gt;type1_code&lt;br&gt;type2_code&lt;br&gt;type3_code&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="260" height="340" as="geometry"/>
+        </mxCell>
+        <mxCell id="ne1" value="&lt;b&gt;Noticia_Evento&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_evento (Surrogate)&lt;br&gt;UK global_event_id (Natural)&lt;br&gt;FK id_tiempo&lt;br&gt;FK id_actor1 / id_actor2&lt;br&gt;FK id_ubicacion&lt;br&gt;FK id_fuente&lt;br&gt;FK event_code&lt;br&gt;event_base_code&lt;br&gt;event_root_code&lt;br&gt;quad_class&lt;br&gt;goldstein_scale&lt;br&gt;num_mentions&lt;br&gt;num_articles&lt;br&gt;num_sources&lt;br&gt;avg_tone&lt;br&gt;is_root_event&lt;br&gt;date_added&lt;br&gt;source_url&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="430" y="350" width="340" height="440" as="geometry"/>
+        </mxCell>
+        <mxCell id="u1" value="&lt;b&gt;Ubicacion&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_ubicacion (Surrogate)&lt;br&gt;UK geo_featureid (Natural)&lt;br&gt;geo_type&lt;br&gt;geo_fullname&lt;br&gt;geo_countrycode&lt;br&gt;geo_adm1code&lt;br&gt;geo_adm2code&lt;br&gt;geo_lat&lt;br&gt;geo_long&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="860" y="380" width="250" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="f1" value="&lt;b&gt;Fuente_Medio&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_fuente (Surrogate)&lt;br&gt;UK url (Natural)&lt;br&gt;dominio&lt;br&gt;nombre_medio&lt;br&gt;tipo_medio&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="780" width="260" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="m1" value="&lt;b&gt;Mencion&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_mencion (Surrogate)&lt;br&gt;FK id_evento&lt;br&gt;FK id_fuente&lt;br&gt;event_time_date&lt;br&gt;mention_time_date&lt;br&gt;mention_type&lt;br&gt;mention_source_name&lt;br&gt;mention_identifier&lt;br&gt;sentence_id&lt;br&gt;actor1_char_offset&lt;br&gt;actor2_char_offset&lt;br&gt;action_char_offset&lt;br&gt;in_raw_text&lt;br&gt;confidence&lt;br&gt;mention_doc_len&lt;br&gt;mention_doc_tone&lt;br&gt;mention_translation&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="430" y="830" width="340" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="t1" target="ne1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" value="N : 1" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERmany;endArrow=ERone;fontSize=10;" edge="1" parent="1" source="ec1" target="ne1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="cc1" target="ec1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="a1" target="ne1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" value="N : 1" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERmany;endArrow=ERone;fontSize=10;" edge="1" parent="1" source="ne1" target="u1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" value="N : 1" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERmany;endArrow=ERone;fontSize=10;" edge="1" parent="1" source="ne1" target="f1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="ne1" target="m1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="olap-star" name="OLAP - Esquema Estrella">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title2" value="TP2 - Esquema Estrella (OLAP) - Marcos Kantor" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="10" width="600" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="dt1" value="&lt;b&gt;Dim_Tiempo&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_tiempo&lt;br&gt;fecha&lt;br&gt;anio&lt;br&gt;trimestre&lt;br&gt;mes&lt;br&gt;dia_semana&lt;br&gt;es_fin_de_semana&lt;br&gt;es_festivo&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="470" y="80" width="300" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="da1" value="&lt;b&gt;Dim_Actor&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_actor&lt;br&gt;nombre&lt;br&gt;tipo_actor (CAMEO)&lt;br&gt;tipo_actor_grupo (Gobierno/ONG/Empresa)&lt;br&gt;pais&lt;br&gt;codigo_cameo&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="270" height="250" as="geometry"/>
+        </mxCell>
+        <mxCell id="ff1" value="&lt;b&gt;Fact_Analisis_Medios&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_fact&lt;br&gt;FK id_tiempo&lt;br&gt;FK id_ubicacion&lt;br&gt;FK id_actor&lt;br&gt;FK id_fuente&lt;br&gt;FK id_cameo&lt;br&gt;id_evento (Dim degenerada)&lt;hr size=&quot;1&quot;&gt;&lt;b&gt;Metricas&lt;/b&gt;&lt;br&gt;num_mentions&lt;br&gt;num_articles&lt;br&gt;num_sources&lt;br&gt;avg_tone&lt;br&gt;goldstein&lt;br&gt;cant_eventos&lt;br&gt;confidence_prom&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="450" y="380" width="340" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="du1" value="&lt;b&gt;Dim_Ubicacion&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_ubicacion&lt;br&gt;pais&lt;br&gt;region&lt;br&gt;ciudad&lt;br&gt;geo_type&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="940" y="380" width="260" height="190" as="geometry"/>
+        </mxCell>
+        <mxCell id="df1" value="&lt;b&gt;Dim_Fuente&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_fuente&lt;br&gt;nombre&lt;br&gt;dominio&lt;br&gt;tipo_medio&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="740" width="270" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="pc1" value="&lt;b&gt;Puente_Evento_CAMEO&lt;/b&gt; (Bridge)&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_puente&lt;br&gt;FK id_evento&lt;br&gt;FK id_cameo&lt;br&gt;peso_contribucion&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="450" y="770" width="340" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="dc1" value="&lt;b&gt;Dim_CAMEO&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;div style=&quot;text-align:left;font-size:11px;&quot;&gt;PK id_cameo&lt;br&gt;event_code&lt;br&gt;event_base_code&lt;br&gt;event_root_code&lt;br&gt;descripcion&lt;br&gt;quad_class&lt;br&gt;quad_class_desc&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="940" y="700" width="260" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="fe1" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="dt1" target="ff1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fe2" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="da1" target="ff1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fe3" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="du1" target="ff1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fe4" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="df1" target="ff1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fe5" value="1 : N (Bridge)" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERone;endArrow=ERmany;fontSize=10;" edge="1" parent="1" source="ff1" target="pc1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="fe6" value="N : 1" style="edgeStyle=orthogonalEdgeStyle;html=1;startArrow=ERmany;endArrow=ERone;fontSize=10;" edge="1" parent="1" source="pc1" target="dc1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
