@@ -1,4 +1,3 @@
-```markdown
 # 🦴 Curso Introducción a la Ingeniería de Datos
 
 **Alumno:** Marcos Kantor  
@@ -21,11 +20,8 @@
 - [📊 TP2 — Modelado OLTP + OLAP](#-tp2--modelado-oltp--olap)
 - [📂 Estructura del repositorio](#-estructura-del-repositorio)
 - [🚀 Cómo reproducir](#-cómo-reproducir)
-- [🤖 Declaración de uso de IA](#-declaración-de-uso-de-ia)
 
----
-
-# 🎓 Proyecto Final (entregable principal)
+- # 🎓 Proyecto Final (entregable principal)
 
 ## 🩺 Pregunta de investigación
 
@@ -64,12 +60,15 @@ Implementar un pipeline completo de Ingeniería de Datos sobre un dataset crudo 
 | **Acceso** | Público (vía SDK oficial de Roboflow) |
 | **Split** | train: 50 imgs / 170 anotaciones |
 
+---
 ## 🛠️ Pipeline implementado
 
 ### 1️⃣ Extracción
+
 Descarga automática vía SDK oficial de Roboflow, sin archivos manuales ni rutas privadas.
 
 ### 2️⃣ Transformación
+
 - **Parser robusto** que soporta bounding boxes YOLO *y* polígonos.
 - Desnormalización de coordenadas a píxeles.
 - **EDA**: balance de clases, distribución geométrica (área, aspect ratio).
@@ -77,29 +76,31 @@ Descarga automática vía SDK oficial de Roboflow, sin archivos manuales ni ruta
 - **Carga optimizada**: selección de columnas + tipado (`int8`, `int16`, `float32`, `category`) con **85.9 % de ahorro de memoria**.
 
 ### 3️⃣ Carga transaccional (2NF)
+
 Esquema SQLite normalizado:
-```
-datasets ──< images ──< annotations >── classes
-```
+
+    datasets ──< images ──< annotations >── classes
+
 - Cada tabla con PK surrogate propia.
 - Cero dependencias parciales (2NF garantizada).
 
 ### 4️⃣ Modelado dimensional (copo de nieve)
-```
-             dim_region
-                 │
-                 ▼
-dim_dataset   dim_class   dim_split   dim_image
-      \           │          │          /
-       \          │          │         /
-        ▼         ▼          ▼        ▼
-              fact_annotations
-```
+
+    dim_region
+        │
+        ▼
+    dim_dataset   dim_class   dim_split   dim_image
+          \           │          │          /
+           ▼          ▼          ▼         ▼
+                fact_annotations
+
 - Jerarquía `dim_region → dim_class` = escalable a cervical/torácica.
 - Métricas: `area`, `area_ratio`, `aspect_ratio`, `bbox_*`.
 
 ### 5️⃣ Dashboard clínico
+
 Aplicación **Streamlit** con Plotly que responde a la pregunta de investigación:
+
 - 📊 KPIs clínicos (cobertura anatómica, balance, calidad geométrica).
 - ⚖️ Veredicto automático de aptitud del dataset.
 - 🎯 Mensaje explícito sobre **SINS** e inestabilidad espinal.
@@ -166,24 +167,22 @@ Este trabajo diseña dos modelos de datos complementarios sobre el flujo **GDELT
 
 # 📂 Estructura del repositorio
 
-```
-Curso_Introduccion_Ingenieria_Datos/
-├── Proyecto_final.ipynb        # 🎓 Entregable final (pipeline completo)
-├── app.py                      # 🖥️ Dashboard Streamlit (SINS)
-├── requirements.txt            # Dependencias
-├── .gitignore
-├── data/                       # Artefactos regenerables (ignorados por Git)
-│   ├── spine_annotations.csv
-│   ├── spine_transaccional.db
-│   ├── spine_dw.db
-│   └── spine_dataset/
-├── notebooks/                  # Actividades previas
-├── src/                        # Código auxiliar
-├── tp1_ID.ipynb                # 📘 Entregable Unidad 1
-├── TP2.md                      # 📊 Entregable TP2 (diseño)
-├── TP2.drawio                  # 📊 Diagramas TP2
-└── README.md
-```
+    Curso_Introduccion_Ingenieria_Datos/
+    ├── Proyecto_final.ipynb        # 🎓 Entregable final (pipeline completo)
+    ├── app.py                      # 🖥️ Dashboard Streamlit (SINS)
+    ├── requirements.txt            # Dependencias
+    ├── .gitignore
+    ├── data/                       # Artefactos regenerables (ignorados por Git)
+    │   ├── spine_annotations.csv
+    │   ├── spine_transaccional.db
+    │   ├── spine_dw.db
+    │   └── spine_dataset/
+    ├── notebooks/                  # Actividades previas
+    ├── src/                        # Código auxiliar
+    ├── tp1_ID.ipynb                # 📘 Entregable Unidad 1
+    ├── TP2.md                      # 📊 Entregable TP2 (diseño)
+    ├── TP2.drawio                  # 📊 Diagramas TP2
+    └── README.md
 
 > ⚠️ Los archivos `.db` y `.csv` **no se versionan**: se regeneran al ejecutar el notebook.
 
@@ -240,4 +239,6 @@ Todo el código fue revisado, adaptado y ejecutado por el autor. Las decisiones 
 *Introducción a la Ingeniería de Datos — Comisión A*
 
 </div>
-```
+- [🤖 Declaración de uso de IA](#-declaración-de-uso-de-ia)
+
+---
