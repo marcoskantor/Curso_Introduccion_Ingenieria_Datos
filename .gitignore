@@ -28,3 +28,6 @@ env/
 .vscode/
 .idea/
 *.swp
+
+# CSV intermedio regenerable
+spine_annotations.csv
