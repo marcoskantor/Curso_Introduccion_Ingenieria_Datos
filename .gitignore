@@ -1,0 +1,30 @@
+# Datos crudos y descargas
+data/*
+!data/.gitkeep
+spine_dataset/
+*.zip
+*.tar.gz
+
+# Credenciales
+.env
+*.key
+secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# SQLite generados
+*.db
+*.sqlite
+*.sqlite3
+
+# Sistema
+.DS_Store
+.vscode/
+.idea/
+*.swp
