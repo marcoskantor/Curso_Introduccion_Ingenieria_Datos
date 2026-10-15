@@ -46,6 +46,7 @@ Pipeline completo de Ingeniería de Datos sobre el dataset crudo de radiografía
 | 🚀 **Notebook en Colab** | [Abrir en Colab](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
 | 📓 **Notebook en GitHub** | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
 | 🖥️ **Tablero** | [`app.py`](./app.py) (se muestra al final del notebook vía proxy nativo de Colab) |
+| 🎤 **Presentación de la defensa (PDF)** | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
 | 📊 **Dataset original** | [lumbar-spine-vpxwf (Roboflow Universe)](https://universe.roboflow.com/rp-team/lumbar-spine-vpxwf) |
 | 📦 **Copia cruda usada** | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) |
 

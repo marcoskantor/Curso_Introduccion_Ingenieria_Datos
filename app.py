@@ -9,6 +9,8 @@ DB = Path(__file__).with_name("spine_dw.db")
 ORDEN = ["L1", "L2", "L3", "L4", "L5"]
 
 st.set_page_config(page_title="Vértebras lumbares — aptitud del dataset", layout="wide")
+AZUL, AZUL_CLARO, GRIS, ROJO = "#02568A", "#7FA9C8", "#C9CED6", "#C0392B"      # paleta institucional ITBA
+px.defaults.color_discrete_sequence = [AZUL, AZUL_CLARO, ROJO, GRIS, "#3E7CB1", "#9BB7D4"]
 
 
 @st.cache_data
@@ -81,9 +83,10 @@ with col_a:
     estado = h.assign(estado=h["es_atipico"].map({0: "anotada", 1: "anotada (atípica)"}))
     grilla = (img[["archivo"]].merge(estado[["archivo", "vertebra", "estado"]], how="left")
               .pivot_table(index="archivo", columns="vertebra", values="estado", aggfunc="first")
-              .reindex(columns=ORDEN).fillna("falta"))
+              .reindex(index=img["archivo"], columns=ORDEN).fillna("falta"))
+    grilla = grilla.loc[(grilla != "falta").sum(axis=1).sort_values(ascending=False).index]
     codigo = grilla.replace({"falta": 0, "anotada": 1, "anotada (atípica)": 2}).astype(int)
-    fig = px.imshow(codigo, color_continuous_scale=[(0, "#e5e5e5"), (0.5, "#4f81bd"), (1, "#c0504d")],
+    fig = px.imshow(codigo, zmin=0, zmax=2, color_continuous_scale=[(0, GRIS), (0.5, AZUL), (1, ROJO)],
                     aspect="auto", labels={"color": "estado"})
     fig.update_layout(coloraxis_showscale=False, height=520, yaxis=dict(showticklabels=False),
                       title="Cobertura imagen × vértebra (gris = falta, azul = anotada, rojo = atípica)")
@@ -100,17 +103,17 @@ with col_b:
 st.subheader("P3 · Coherencia anatómica")
 col_a, col_b = st.columns(2)
 with col_a:
-    fig = px.box(h, x="vertebra", y="alto_norm", points="all", color="vertebra",
+    fig = px.box(h, x="vertebra", y="alto_norm", points="all", color_discrete_sequence=[AZUL],
                  category_orders={"vertebra": ORDEN},
-                 title="Alto de cada vértebra relativo a sus vecinas (se espera un aumento hacia L5)",
+                 title="Alto relativo a sus vecinas (crece hacia L5)",
                  labels={"alto_norm": "alto / mediana del alto en la imagen"})
-    fig.update_layout(showlegend=False)
     st.plotly_chart(fig, width="stretch")
 with col_b:
     fig = px.line(h.sort_values("orden_craneocaudal"), x="vertebra", y="cy_rel", line_group="archivo",
                   color=h.sort_values("orden_craneocaudal")["orden_coherente"].map({1: "orden correcto", 0: "rompe el orden"}),
+                  color_discrete_map={"orden correcto": AZUL_CLARO, "rompe el orden": ROJO},
                   category_orders={"vertebra": ORDEN}, markers=True,
-                  title="Posición vertical de cada vértebra por imagen (debe crecer de L1 a L5)",
+                  title="Posición vertical por imagen (L1 arriba → L5 abajo)",
                   labels={"cy_rel": "centroide vertical / alto de la imagen", "color": ""})
     fig.update_yaxes(autorange="reversed")
     st.plotly_chart(fig, width="stretch")
@@ -122,7 +125,7 @@ var = st.radio("Variable", ["area_norm", "aspecto", "relleno"], horizontal=True,
                             "relleno": "relleno del polígono"}.get)
 fig = px.strip(h, x="vertebra", y=var, color=h["es_atipico"].map({0: "normal", 1: "atípica"}),
                category_orders={"vertebra": ORDEN}, hover_data=["archivo", "motivo_atipico"],
-               color_discrete_map={"normal": "#4f81bd", "atípica": "#c0504d"}, labels={"color": ""})
+               color_discrete_map={"normal": AZUL_CLARO, "atípica": ROJO}, labels={"color": ""})
 st.plotly_chart(fig, width="stretch")
 atip = h[h["es_atipico"] == 1][["archivo", "vertebra", "diagnostico", "motivo_atipico"]]
 st.markdown(f"**{len(atip)} anotaciones marcadas para revisión manual**")
@@ -135,7 +138,7 @@ with col_a:
     rep = img.groupby(["diagnostico", "completa"]).size().reset_index(name="imagenes")
     rep["completa"] = rep["completa"].map({1: "completa L1–L5", 0: "incompleta o sin anotar"})
     fig = px.bar(rep, y="diagnostico", x="imagenes", color="completa", orientation="h",
-                 title="Imágenes por diagnóstico", color_discrete_sequence=["#4f81bd", "#bfbfbf"], labels={"completa": ""})
+                 title="Imágenes por diagnóstico", color_discrete_sequence=[AZUL, GRIS], labels={"completa": ""})
     st.plotly_chart(fig, width="stretch")
 with col_b:
     fig = px.histogram(img, x="grupo_edad", color="sexo", barmode="group", title="Edad y sexo (del nombre de archivo)",
