@@ -31,3 +31,9 @@ env/
 
 # CSV intermedio regenerable
 spine_annotations.csv
+
+# Dato crudo del proyecto final (CC BY 4.0), versionado para reproducibilidad sin credenciales
+!data/raw/
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/lumbar-spine-vpxwf-v1-yolov8.zip
