@@ -19,7 +19,7 @@
 | Entrega | Tema | Archivos | Colab |
 |---|---|---|---|
 | [🎓 Proyecto Final](#-proyecto-final) | Calidad de un dataset de vértebras lumbares para un CDSS de inestabilidad espinal | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) · [`app.py`](./app.py) · [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
-| [📘 TP1](#-tp1--ingesta-y-exploración-de-gdelt-20) | Ingesta y exploración de GDELT 2.0 | [`tp1_ID.ipynb`](./tp1_ID.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/tp1_ID.ipynb) |
+| [📘 TP1](#-tp1--ingesta-y-exploración-de-gdelt-20) | Ingesta y exploración de GDELT 2.0 | [`TP1.ipynb`](./TP1.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP1.ipynb) |
 | [📊 TP2](#-tp2--modelado-oltp--olap) | Modelado transaccional y dimensional (GDELT / CAMEO) | [`TP2.md`](./TP2.md) · [`TP2.drawio`](./TP2.drawio) | — |
 | [📈 TP3](#-tp3--análisis-multivariante) | Análisis multivariante del ecosistema global de noticias | [`TP3.ipynb`](./TP3.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP3.ipynb) |
 | [🔎 TP4](#-tp4--detección-de-eventos-atípicos) | Detección de eventos atípicos en GDELT 2.0 | [`TP4.ipynb`](./TP4.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP4.ipynb) |
@@ -90,7 +90,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 
 Ingesta de un día de la tabla de eventos de GDELT 2.0 a partir de `masterfilelist.txt` (~96 archivos de 15 minutos), descarga en paralelo con `ThreadPoolExecutor`, lectura directa desde el ZIP y cálculo de métricas diarias, con gráficos de evolución temporal y un mapa por país.
 
-📓 [`tp1_ID.ipynb`](./tp1_ID.ipynb)
+📓 [`TP1.ipynb`](./TP1.ipynb)
 
 ---
 
@@ -138,7 +138,7 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
     ├── Proyecto_final_defensa.pdf    # 🎤 Presentación de la defensa
     ├── defensa/                      # Fuente LaTeX (Beamer) y figuras de la defensa
     ├── data/raw/                     # Dato crudo del proyecto final (CC BY 4.0)
-    ├── tp1_ID.ipynb                  # 📘 TP1
+    ├── TP1.ipynb                  # 📘 TP1
     ├── TP2.md · TP2.drawio           # 📊 TP2
     ├── TP3.ipynb                     # 📈 TP3
     ├── TP4.ipynb                     # 🔎 TP4
