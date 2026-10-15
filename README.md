@@ -29,13 +29,15 @@
 
 ## 🎯 Objetivo
 
-Implementar un pipeline completo de Ingeniería de Datos sobre un dataset crudo de imágenes médicas anotadas con bounding boxes:
+Pipeline completo de Ingeniería de Datos sobre el dataset crudo de radiografías lumbares anotadas (polígonos L1–L5):
 
 | # | Etapa | Artefacto |
 |---|---|---|
-| 1 | **ETL** hacia base transaccional SQLite normalizada en **2NF** | `spine_transaccional.db` |
-| 2 | **Modelado dimensional** (estrella + copo de nieve) | `spine_dw.db` |
-| 3 | **Dashboard interactivo** con mensaje clínico | `app.py` (Streamlit) |
+| 1 | **Extracción** reproducible sin credenciales (copia CC BY 4.0 en `data/raw/`, verificada por SHA-256) | zip crudo YOLOv8 |
+| 2 | **ETL**: inventario, parsing de polígonos, metadatos clínicos del nombre de archivo, carga optimizada, NAs, duplicados y atípicos | staging |
+| 3 | **Base transaccional SQLite** normalizada (1FN–3FN, claves compuestas) | `spine_oltp.db` |
+| 4 | **Almacén de datos SQLite** en copo de nieve, grano "vértebra anotada por imagen" | `spine_dw.db` |
+| 5 | **Tablero Streamlit** con veredicto sobre la aptitud del dataset | `app.py` |
 
 ## 🔗 Links
 
@@ -43,82 +45,46 @@ Implementar un pipeline completo de Ingeniería de Datos sobre un dataset crudo 
 |---|---|
 | 🚀 **Notebook en Colab** | [Abrir en Colab](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
 | 📓 **Notebook en GitHub** | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
-| 🖥️ **Dashboard** | `app.py` (se renderiza al final del notebook vía proxy nativo de Colab) |
-| 📊 **Dataset** | [lumbar-spine-vpxwf (Roboflow Universe)](https://universe.roboflow.com/rp-team/lumbar-spine-vpxwf) |
+| 🖥️ **Tablero** | [`app.py`](./app.py) (se muestra al final del notebook vía proxy nativo de Colab) |
+| 📊 **Dataset original** | [lumbar-spine-vpxwf (Roboflow Universe)](https://universe.roboflow.com/rp-team/lumbar-spine-vpxwf) |
+| 📦 **Copia cruda usada** | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) |
 
 ## 🧬 Dataset
 
 | Campo | Valor |
 |---|---|
-| **Nombre** | `lumbar-spine-vpxwf` |
-| **Plataforma** | Roboflow Universe |
-| **Workspace** | `rp-team` |
-| **Tipo de tarea** | Object Detection |
-| **Formato** | YOLOv8 |
+| **Nombre** | `rp-team/lumbar-spine-vpxwf`, versión 1 |
+| **Tarea** | Segmentación de instancias (polígonos) |
+| **Formato** | YOLOv8 (export crudo) |
 | **Clases** | L1, L2, L3, L4, L5 |
-| **Licencia** | CC BY 4.0 |
-| **Acceso** | Público (vía SDK oficial de Roboflow) |
-| **Split** | train: 50 imgs / 170 anotaciones |
+| **Licencia** | CC BY 4.0 (permite redistribuir citando la fuente) |
+| **Acceso** | URL pública de este repositorio — **sin API key** |
+| **Contenido** | 50 radiografías (34 anotadas), 170 polígonos; diagnóstico, sexo y edad en el nombre de archivo |
 
----
 ## 🛠️ Pipeline implementado
 
-### 1️⃣ Extracción
-
-Descarga automática vía SDK oficial de Roboflow, sin archivos manuales ni rutas privadas.
-
-### 2️⃣ Transformación
-
-- **Parser robusto** que soporta bounding boxes YOLO *y* polígonos.
-- Desnormalización de coordenadas a píxeles.
-- **EDA**: balance de clases, distribución geométrica (área, aspect ratio).
-- **Tratamiento de NAs/outliers**: área mínima, bboxes fuera de imagen, aspect ratio extremo.
-- **Carga optimizada**: selección de columnas + tipado (`int8`, `int16`, `float32`, `category`) con **85.9 % de ahorro de memoria**.
-
-### 3️⃣ Carga transaccional (2NF)
-
-Esquema SQLite normalizado:
-
-    datasets ──< images ──< annotations >── classes
-
-- Cada tabla con PK surrogate propia.
-- Cero dependencias parciales (2NF garantizada).
-
-### 4️⃣ Modelado dimensional (copo de nieve)
-
-    dim_region
-        │
-        ▼
-    dim_dataset   dim_class   dim_split   dim_image
-          \           │          │          /
-           ▼          ▼          ▼         ▼
-                fact_annotations
-
-- Jerarquía `dim_region → dim_class` = escalable a cervical/torácica.
-- Métricas: `area`, `area_ratio`, `aspect_ratio`, `bbox_*`.
-
-### 5️⃣ Dashboard clínico
-
-Aplicación **Streamlit** con Plotly que responde a la pregunta de investigación:
-
-- 📊 KPIs clínicos (cobertura anatómica, balance, calidad geométrica).
-- ⚖️ Veredicto automático de aptitud del dataset.
-- 🎯 Mensaje explícito sobre **SINS** e inestabilidad espinal.
+- **Extracción:** descarga por URL pública, verificación SHA-256, idempotente. El SDK de Roboflow queda como alternativa opcional.
+- **Carga optimizada:** `usecols` + tipado (`int8`, `int16`, `Int8` nullable, `float32`, `category`).
+- **Faltantes:** imágenes sin anotar (se conservan marcadas), completitud L1–L5 por imagen, metadatos no identificables (nulos, sin imputar).
+- **Duplicados:** una vértebra repetida en la misma imagen se resuelve por cercanía a la posición anatómica esperada.
+- **Atípicos:** reglas geométricas (descarte), Tukey 2·IQR por vértebra tras Shapiro-Wilk, Mahalanobis robusta, y control del orden craneocaudal L1→L5 (marcados, no descartados).
+- **Transaccional:** `dataset`, `diagnostico`, `region`, `vertebra`, `imagen`, `anotacion` (PK compuesta imagen+vértebra), `vertice` (PK compuesta; 1FN del polígono).
+- **Almacén:** `fact_vertebra_anotada` con PK compuesta `(imagen_key, vertebra_key)`; dimensiones `dim_vertebra → dim_region`, `dim_imagen → dim_dataset`, `dim_imagen → dim_diagnostico`.
+- **Tablero:** veredicto ajustable, cobertura imagen × vértebra, balance, progresión anatómica, calidad geométrica y representatividad (P1–P4).
 
 ## ✅ Requisitos de la consigna cubiertos
 
-| Requisito | Cumplimiento |
+| Requisito | Dónde |
 |---|---|
-| Cuaderno Colab público en repo GitHub | ✅ |
-| Documentado con celdas Markdown | ✅ |
-| Declaración IA formato `"[IA versión]" para "[propósito]"` | ✅ |
-| Dataset desde fuente pública (API) | ✅ Roboflow SDK |
-| NAs/NULLs y outliers justificados | ✅ Celda 10 + 11 |
-| SQLite transaccional 2NF | ✅ Celda 12 |
-| SQLite DW (estrella + copo de nieve) | ✅ Celda 13 |
-| Interfaz interactiva (Streamlit) | ✅ Celda final |
-| Mensaje claro sobre la investigación | ✅ Dashboard + conclusiones |
-| Carga optimizada (selección + tipado) | ✅ Celda intermedia |
+| Colab público en el repo, Markdown, reproducible con *Ejecutar todo* | `Proyecto_final.ipynb` |
+| Declaración de uso de IA con el formato exigido | sección inicial del notebook |
+| Instrucciones de la IA (*human-in-the-loop*) | sección inicial del notebook |
+| Dataset crudo de fuente pública, afín a la tesis, sin credenciales | sección 1 |
+| Carga optimizada (columnas + tipado) | sección 2 |
+| NAs y atípicos con decisiones justificadas | sección 3 |
+| SQLite transaccional ≥ 2FN | sección 4 |
+| SQLite almacén (copo de nieve), hechos separados de dimensiones | sección 5 |
+| Visualización interactiva con mensaje claro | sección 6 |
 
 ---
 
@@ -172,11 +138,8 @@ Este trabajo diseña dos modelos de datos complementarios sobre el flujo **GDELT
     ├── app.py                      # 🖥️ Dashboard Streamlit (SINS)
     ├── requirements.txt            # Dependencias
     ├── .gitignore
-    ├── data/                       # Artefactos regenerables (ignorados por Git)
-    │   ├── spine_annotations.csv
-    │   ├── spine_transaccional.db
-    │   ├── spine_dw.db
-    │   └── spine_dataset/
+    ├── data/
+    │   └── raw/lumbar-spine-vpxwf-v1-yolov8.zip   # dato crudo (CC BY 4.0)
     ├── notebooks/                  # Actividades previas
     ├── src/                        # Código auxiliar
     ├── tp1_ID.ipynb                # 📘 Entregable Unidad 1
@@ -184,29 +147,18 @@ Este trabajo diseña dos modelos de datos complementarios sobre el flujo **GDELT
     ├── TP2.drawio                  # 📊 Diagramas TP2
     └── README.md
 
-> ⚠️ Los archivos `.db` y `.csv` **no se versionan**: se regeneran al ejecutar el notebook.
+> ⚠️ Las bases `.db` y los archivos de staging **no se versionan**: se regeneran al ejecutar el notebook.
 
 ---
 
 # 🚀 Cómo reproducir
 
-## Requisitos previos — Colab Secrets
+No hace falta ninguna credencial.
 
-Configurar en el panel 🔑 de Colab:
-
-| Secret | Descripción |
-|---|---|
-| `ROBOFLOW_API_KEY` | API key de Roboflow ([obtener](https://app.roboflow.com/settings/api)) |
-| `GITHUB_TOKEN` | Personal Access Token (scope: `repo`) |
-| `NGROK_AUTH_TOKEN` | *(opcional, si se usa ngrok en vez del proxy nativo)* |
-
-## Pasos
-
-1. Abrir el notebook en Colab:  
+1. Abrir el notebook en Colab:
    👉 [Abrir `Proyecto_final.ipynb` en Colab](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb)
-2. Configurar los Secrets (panel 🔑).
-3. Ejecutar `Runtime → Run all`.
-4. El dashboard se renderiza al final del notebook (sin exponer puertos a internet).
+2. Ejecutar *Entorno de ejecución → Ejecutar todo*.
+3. El tablero se muestra al final del notebook (proxy nativo de Colab, sin exponer puertos a internet).
 
 ---
 
@@ -214,10 +166,11 @@ Configurar en el panel 🔑 de Colab:
 
 | Pregunta | Métrica |
 |---|---|
-| ¿Hay cobertura anatómica completa? | Vértebras únicas cubiertas (L1–L5) |
-| ¿El dataset está balanceado? | Ratio max/min entre clases |
-| ¿Las anotaciones son geométricamente coherentes? | `bbox_w` vs `bbox_h`, área por clase |
-| ¿Es apto para entrenar un CDSS de SINS? | Veredicto automático según umbrales clínicos |
+| P1 · ¿Cuántas imágenes tienen L1–L5 completas y qué tan balanceadas están las clases? | imágenes completas, anotaciones por vértebra |
+| P2 · ¿Qué anotaciones tienen tamaño o forma atípicos para su vértebra? | área relativa a sus vecinas, aspecto, relleno, marca de atípico |
+| P3 · ¿Se respeta el orden L1→L5 y el aumento de tamaño hacia caudal? | posición vertical relativa, alto relativo, orden coherente |
+| P4 · ¿Qué diagnósticos, sexos y edades cubre? | imágenes y completas por diagnóstico, sexo y grupo de edad |
+| ¿Alcanza para entrenar el detector del CDSS? | veredicto con umbral ajustable |
 
 ---
 
@@ -228,6 +181,7 @@ En cumplimiento del requisito de la cátedra, se declara el uso de herramientas 
 - **"Claude Sonnet 4.5"** para "asistir en la redacción de celdas Markdown explicativas y justificaciones metodológicas".
 - **"ChatGPT 4.5"** para "sugerir estructuras de esquemas SQLite (2NF y estrella/copo de nieve) a partir del análisis del dataset".
 - **"GitHub Copilot"** para "autocompletar fragmentos de código Python relacionados con parsing de anotaciones YOLO y visualizaciones con Plotly/Streamlit".
+- **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas y tablero), aplicar correcciones del TP2 y desarrollar el TP4".
 
 Todo el código fue revisado, adaptado y ejecutado por el autor. Las decisiones metodológicas son responsabilidad exclusiva del tesista.
 
