@@ -123,8 +123,9 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
 | Ingesta | Archivos de 15 minutos desde `masterfilelist.txt`, verificación MD5, One Big Table desnormalizada con los libros de códigos CAMEO/FIPS, guardada en Parquet |
 | Nulos y ceros | Faltantes estructurales (evento sin Actor2) vs. reales, auditoría de consistencia lógica del codebook, imputación justificada por variable |
 | Cardinalidad y dummies | Categorías con menos del 5 % → `OTHER`; variables indicadoras con categoría de referencia; control de varianza casi nula |
-| ACP | Estandarización y selección del número mínimo de componentes (varianza acumulada, Kaiser, codo) |
-| Atípicos | 10 métodos de 6 familias: distancia global (Z-score, Tukey), T² de Hotelling, SPE, K-Means, k-NN, LOF, DBSCAN, Isolation Forest y autoencoder; acuerdo por Jaccard y consenso por mayoría; exportación a Parquet/CSV |
+| Diseño de variables | Noticias retrospectivas (fechas "hace un año" inferidas por GDELT) separadas como hallazgo de calidad; conteos en percentiles; ubicación sólo como país; variantes probadas y documentadas |
+| ACP | Escalado robusto (`RobustScaler`: mediana y RIC) y selección del número mínimo de componentes (varianza acumulada, Kaiser generalizado, codo) |
+| Atípicos | 10 métodos de 6 familias: distancia global (Z-score, Tukey), T² de Hotelling, SPE, K-Means, k-NN, LOF, DBSCAN, Isolation Forest y autoencoder; acuerdo por Jaccard y consenso por mayoría; tipología de cada atípico y tabla agrupada por noticia; exportación a Parquet/CSV |
 
 📓 [`TP4.ipynb`](./TP4.ipynb)
 
