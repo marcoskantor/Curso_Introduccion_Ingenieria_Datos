@@ -89,6 +89,9 @@
 }
 \newcommand{\tab}[4][2.9cm]{\node[tabla=#1] (#2) at #3 {\textcolor{white}{\textbf{#2}}\nodepart{two}#4};}
 
+
+\newcommand{\leer}[1]{\begin{block}{Cómo leerlo}\footnotesize #1\end{block}}
+\newcommand{\dice}[1]{\setbeamercolor{block title}{fg=white,bg=alerta}\setbeamercolor{block body}{fg=tinta,bg=alerta!8}\begin{block}{Qué nos dice}\footnotesize #1\end{block}}
 \title{¿Alcanza un dataset público de radiografías lumbares para entrenar el detector de vértebras de un CDSS de inestabilidad espinal?}
 \author{Marcos Kantor}
 \date{Proyecto Final — Defensa académica}
@@ -200,46 +203,76 @@
 % ===================================================================== demo
 \separador{Demostración del tablero}
 
-\begin{frame}{Tablero interactivo (Streamlit)}{Lee sólo del almacén \texttt{spine\_dw.db} — en Colab se abre al final del notebook}
-  \begin{columns}[c]
-    \begin{column}{0.62\textwidth}
-      \includegraphics[width=\linewidth]{fig/tablero_1.jpg}
+\begin{frame}{El tablero: una pregunta y un veredicto}{Streamlit · lee sólo del almacén \texttt{spine\_dw.db} · en Colab se abre al final del notebook}
+  \centering\includegraphics[width=0.88\linewidth]{fig/tablero_principal.png}\\[0.6ex]
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \leer{Arriba, la pregunta de investigación. Debajo, cinco indicadores (imágenes, anotadas, completas, \% atípicas, errores de orden) y un \textbf{veredicto en color}: rojo = no alcanza, amarillo = alcanza para ajuste fino, verde = apto.}
     \end{column}
-    \begin{column}{0.36\textwidth}
-      \small
-      \textbf{Mensaje explícito:} un \textbf{veredicto} sobre la aptitud del dataset.\\[1ex]
-      \begin{itemize}\setlength{\itemsep}{0.5ex}
-        \item El umbral de imágenes completas es un \textbf{supuesto}: se ajusta en la barra lateral y el veredicto cambia en vivo.
-        \item Filtros por diagnóstico y sexo.
-        \item Interruptor para excluir anotaciones atípicas.
-      \end{itemize}
-      {\footnotesize\color{gris}En vivo: P1 $\rightarrow$ P3 $\rightarrow$ P2 $\rightarrow$ P4 $\rightarrow$ P5.}
+    \begin{column}{0.48\textwidth}
+      \dice{Con 33 imágenes completas el dataset \textbf{no alcanza para entrenar} el detector. El mínimo (200) es un supuesto: se cambia en la barra lateral y el veredicto se recalcula en vivo, igual que con los filtros de diagnóstico y sexo.}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Tablero: cobertura y anatomía}
-  \begin{columns}[t]
-    \begin{column}{0.49\textwidth}
-      \centering\includegraphics[width=\linewidth]{fig/tablero_2c.jpg}\\[0.5ex]
-      {\footnotesize \textbf{P1} Grilla imagen $\times$ vértebra: gris = falta, rojo = atípica. Las filas grises son las 16 imágenes sin anotar.}
+\begin{frame}{Tablero P1 · ¿Cuántas imágenes están completas?}
+  \begin{columns}[T]
+    \begin{column}{0.47\textwidth}
+      \centering\includegraphics[height=5.2cm]{fig/tab_cobertura.pdf}
     \end{column}
-    \begin{column}{0.49\textwidth}
-      \centering\includegraphics[width=\linewidth]{fig/tablero_3c.jpg}\\[0.5ex]
-      {\footnotesize \textbf{P3} El tamaño relativo crece hacia L5 y cada imagen respeta el orden vertical L1$\rightarrow$L5.}
+    \begin{column}{0.27\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_balance.pdf}\\[-0.5ex]
+      {\scriptsize Anotaciones por vértebra}
+    \end{column}
+    \begin{column}{0.25\textwidth}
+      \leer{Izquierda: \textbf{cada fila es una radiografía} y cada columna una vértebra. Azul = anotada, rojo = anotada pero atípica, gris = falta.}
+      \dice{33 radiografías completas; \textbf{16 sin ninguna anotación}. Las clases están balanceadas (33–34 por vértebra).}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Tablero: calidad geométrica}
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}
-      \includegraphics[width=\linewidth]{fig/tablero_4c.jpg}
+\begin{frame}{Tablero P3 · ¿Las anotaciones respetan la anatomía?}
+  \begin{columns}[T]
+    \begin{column}{0.37\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_orden.pdf}\\[-0.3ex]
+      {\scriptsize Posición de cada vértebra en su radiografía}
     \end{column}
-    \begin{column}{0.38\textwidth}
-      \small
-      \textbf{P2} La variable se elige en vivo: área relativa a sus vecinas, relación de aspecto o relleno del polígono.\\[1ex]
-      En rojo, las anotaciones marcadas; debajo, la tabla con el \textbf{motivo} de cada una para la revisión manual.
+    \begin{column}{0.37\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_alto.pdf}\\[-0.3ex]
+      {\scriptsize Alto de cada vértebra comparado con sus vecinas}
+    \end{column}
+    \begin{column}{0.24\textwidth}
+      \leer{Izquierda: \textbf{cada línea es una radiografía}; debe bajar de L1 a L5. Derecha: 1 = alto típico de las vértebras de esa imagen.}
+      \dice{Todas las líneas bajan: \textbf{0 errores de orden}. El alto crece de L1 a L5, como en la anatomía real.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Tablero P2 · ¿Hay anotaciones mal dibujadas?}
+  \begin{columns}[T]
+    \begin{column}{0.66\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_calidad.pdf}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+      \leer{\textbf{Cada punto es una vértebra anotada.} 1 = mismo tamaño que las otras vértebras de su radiografía. En rojo, las que el control estadístico (Tukey 2·RIC) marcó como atípicas.}
+      \dice{Sólo \textbf{5 de 169}, todas L3. No se borran: el tablero las lista con su motivo para \textbf{revisarlas a mano}.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Tablero P4 y P5 · ¿Qué cubre el dataset y qué se puede medir?}
+  \begin{columns}[T]
+    \begin{column}{0.37\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_diagnostico.pdf}\\[-0.3ex]
+      {\scriptsize P4 · Imágenes por diagnóstico}
+    \end{column}
+    \begin{column}{0.37\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_cobb.pdf}\\[-0.3ex]
+      {\scriptsize P5 · Cobb aproximado por radiografía}
+    \end{column}
+    \begin{column}{0.24\textwidth}
+      \leer{Izquierda: azul = completa, gris = sin anotar. Derecha: \textbf{cada punto es una radiografía}; cuanto más alto, más inclinadas entre sí están sus vértebras.}
+      \dice{Las imágenes sin anotar son de escoliosis y «S». Las escoliosis tienen \textbf{36°} frente a \textbf{7°} de las normales: la curva se detecta desde los contornos.}
     \end{column}
   \end{columns}
 \end{frame}
