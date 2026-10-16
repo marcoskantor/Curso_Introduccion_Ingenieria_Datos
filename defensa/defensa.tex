@@ -123,6 +123,7 @@
         \item \textbf{Demostración del tablero}
         \item Proceso de ETL
         \item Datos faltantes y anomalías
+        \item \textbf{Descriptores de forma con OpenCV}
         \item Modelo entidad-relación transaccional
         \item Diseño del almacén de datos
         \item Resultados y veredicto
@@ -165,6 +166,7 @@
         \textbf{\color{itba}P2} & \textbf{Calidad geométrica:} ¿qué anotaciones tienen tamaño o forma atípicos para su vértebra? \\
         \textbf{\color{itba}P3} & \textbf{Coherencia anatómica:} ¿se respeta el orden L1$\rightarrow$L5 y el aumento de tamaño hacia caudal? \\
         \textbf{\color{itba}P4} & \textbf{Representatividad:} ¿qué diagnósticos, sexos y edades cubre? \\
+        \textbf{\color{itba}P5} & \textbf{Alineación:} ¿la inclinación y el desplazamiento medidos con momentos de imagen distinguen las patologías? \\
         \bottomrule
       \end{tabularx}
     \end{column}
@@ -211,7 +213,7 @@
         \item Filtros por diagnóstico y sexo.
         \item Interruptor para excluir anotaciones atípicas.
       \end{itemize}
-      {\footnotesize\color{gris}En vivo: P1 $\rightarrow$ P3 $\rightarrow$ P2 $\rightarrow$ P4.}
+      {\footnotesize\color{gris}En vivo: P1 $\rightarrow$ P3 $\rightarrow$ P2 $\rightarrow$ P4 $\rightarrow$ P5.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -259,7 +261,7 @@
     \node[paso, below=1.2cm of e4] (t1) {Carga optimizada\\\texttt{usecols} + tipos};
     \node[paso, left=0.45cm of t1] (t2) {Faltantes y duplicados};
     \node[paso, left=0.45cm of t2] (t3) {Atípicos y coherencia anatómica};
-    \node[paso, left=0.45cm of t3] (t4) {Variables sin escala};
+    \node[paso, left=0.45cm of t3] (t4) {Momentos OpenCV y variables sin escala};
     \node[paso, below=1.2cm of t4, fill=itba, text=white] (c1) {SQLite transaccional (3FN)};
     \node[paso, right=0.45cm of c1, fill=itba, text=white] (c2) {SQLite almacén (copo de nieve)};
     \node[paso, right=0.45cm of c2, fill=itba, text=white] (c3) {Tablero Streamlit};
@@ -423,6 +425,79 @@
 \end{frame}
 
 % ===================================================================== OLTP
+\separador{Descriptores de forma con OpenCV}
+
+\begin{frame}{Momentos de imagen sobre cada contorno}{Recomendación del docente: \texttt{cv2.moments} (tutorial de momentos de OpenCV)}
+  \begin{columns}[c]
+    \begin{column}{0.5\textwidth}
+      \footnotesize
+      \renewcommand{\arraystretch}{1.25}
+      \begin{tabular}{@{}ll@{}}
+        \toprule
+        Descriptor & Cálculo \\ \midrule
+        Área & $m_{00}$ \\
+        Centroide & $(m_{10}/m_{00},\; m_{01}/m_{00})$ \\
+        \textbf{Inclinación} & $\theta = \tfrac12\,\mathrm{atan2}(2\mu_{11},\, \mu_{20} - \mu_{02})$ \\
+        Excentricidad & $\sqrt{1 - \lambda_2/\lambda_1}$ (autovalores de $\mu$) \\
+        Circularidad & $4\pi A / P^2$ (\texttt{arcLength}) \\
+        Solidez & $A / A_{\text{casco}}$ (\texttt{convexHull}) \\
+        Hu 1, Hu 2 & \texttt{HuMoments}, escala log \\ \bottomrule
+      \end{tabular}\\[1ex]
+      \small
+      \textbf{Validación:} $m_{00}$ coincide con el área por fórmula de Gauss (diferencia máxima $1{,}6\times10^{-6}$).\\[0.6ex]
+      \textbf{Cobb aproximado} = máx $-$ mín de la inclinación de L1–L5 en la imagen, la lógica del ángulo de Cobb.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering\includegraphics[height=5.6cm]{fig/momentos.pdf}\\
+      {\scriptsize En naranja, el eje principal de cada vértebra.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Formato de píxel y nuevas columnas}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{\color{itba}Metadatos de la imagen} (\texttt{cv2.imread(…, IMREAD\_UNCHANGED)})\\[0.6ex]
+      \small
+      \begin{itemize}\setlength{\itemsep}{0.4ex}
+        \item 50 JPG, \textbf{3 canales, 8 bits}.
+        \item 41 de 50 son radiografías en \textbf{gris guardadas como RGB} (los tres canales iguales).
+        \item 50 resoluciones distintas: de 144$\times$606 a 1669$\times$3246 px.
+        \item Formato, canales, profundidad de bits, tamaño y \textbf{vista} pasan a la tabla \texttt{imagen}.
+      \end{itemize}
+      \vspace{0.6ex}
+      \textbf{\color{itba}Píxeles dentro de cada vértebra}\\[0.4ex]
+      Máscara con \texttt{cv2.fillPoly}: \textbf{intensidad media} y \textbf{contraste} (desvío), en [0, 1].
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{\color{itba}Columnas nuevas en los hechos}\\[0.6ex]
+      \small
+      \texttt{inclinacion}, \texttt{excentricidad}, \texttt{circularidad}, \texttt{solidez}, \texttt{hu1}, \texttt{hu2}, \texttt{intensidad\_media}, \texttt{contraste}\\[1ex]
+      \textbf{\color{itba}Nuevo grano: segmento intervertebral}\\[0.6ex]
+      L1–L2, L2–L3, L3–L4, L4–L5 por imagen (135 segmentos): ángulo segmentario, desplazamiento y separación entre vecinas.\\[1ex]
+      \begin{block}{Sobre la torsión (\emph{twist})}
+        \footnotesize La rotación axial no se mide en una radiografía 2D (requiere pedículos o tomografía). Los momentos miden la \textbf{inclinación} en el plano, base del ángulo de Cobb.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{P5 · ¿Los momentos detectan la patología?}
+  \centering\includegraphics[height=4.0cm]{fig/p5.pdf}\\[0.4ex]
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \small
+      \textbf{Vista:} escoliosis, normales y «S» son \textbf{de frente} (mide la curva); las listesis, \textbf{de perfil} (mide la lordosis).\\[0.4ex]
+      \textbf{Escoliosis vs. normales:} Cobb mediano \textbf{36° vs. 7°}; Mann-Whitney $p < 0{,}001$.
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \small
+      \textbf{Listesis:} L4–L5 es el nivel más desplazado, pero \textbf{no significativo} frente al resto (Wilcoxon, $n = 8$, $p = 0{,}15$): tendencia.\\[0.4ex]
+      {\color{itba}\textbf{Para el CDSS:} los contornos ya miden alineación.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 \separador{Base de datos transaccional}
 
 \begin{frame}{Modelo entidad-relación (SQLite)}
@@ -431,7 +506,7 @@
   \begin{tikzpicture}[node distance=0.5cm]
     \tab{dataset}{(0,2.6)}{\textbf{PK} dataset\_id\\nombre, fuente, version\\licencia, sha256}
     \tab{diagnostico}{(0,0)}{\textbf{PK} diagnostico\_id\\nombre}
-    \tab[3.2cm]{imagen}{(4.1,1.3)}{\textbf{PK} imagen\_id\\\textbf{FK} dataset\_id\\\textbf{FK} diagnostico\_id\\archivo, split\\ancho\_px, alto\_px, anotada\\sexo, edad, nivel\_listesis}
+    \tab[3.2cm]{imagen}{(4.1,1.3)}{\textbf{PK} imagen\_id\\\textbf{FK} dataset\_id\\\textbf{FK} diagnostico\_id\\archivo, split, vista\\ancho\_px, alto\_px, anotada\\formato, canales, bits, tamaño\\sexo, edad, nivel\_listesis}
     \tab[3.3cm]{anotacion}{(8.4,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\es\_atipico\\orden\_coherente\\motivo\_atipico}
     \tab[3.3cm]{vertice}{(12.6,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\\textbf{PK} orden\\x\_px, y\_px}
     \tab{vertebra}{(8.4,-1.6)}{\textbf{PK} vertebra\_id\\codigo, orden\_craneocaudal\\\textbf{FK} region\_id}
@@ -475,43 +550,33 @@
 % ===================================================================== DW
 \separador{Almacén de datos}
 
-\begin{frame}{Copo de nieve}{Grano: una vértebra anotada en una imagen}
+\begin{frame}{Copo de nieve con dos tablas de hechos}{Constelación de hechos: comparten dimensiones, cada una con su grano}
   \centering
-  \resizebox{\linewidth}{!}{%
+  \resizebox{!}{5.5cm}{%
       \begin{tikzpicture}
-        \node[hechos=3.5cm] (f) at (0,0) {\textcolor{white}{\textbf{fact\_vertebra\_anotada}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} vertebra\_key\\[0.3ex]area\_norm, alto\_norm\\aspecto, relleno, cy\_rel\\es\_atipico, orden\_coherente\\motivo\_atipico};
-        \node[tabla=3.3cm, anchor=west] (di) at (4.4,0) {\textcolor{white}{\textbf{dim\_imagen}}\nodepart{two}\textbf{PK} imagen\_key\\split, resolucion\\sexo, edad, grupo\_edad\\anotada, completa\\\textbf{FK} dataset\_key\\\textbf{FK} diagnostico\_key};
-        \node[tabla=2.6cm, anchor=west] (dd) at (9.0,1.3) {\textcolor{white}{\textbf{dim\_dataset}}\nodepart{two}\textbf{PK} dataset\_key\\nombre, licencia};
-        \node[tabla=2.6cm, anchor=west] (dg) at (9.0,-1.3) {\textcolor{white}{\textbf{dim\_diagnostico}}\nodepart{two}\textbf{PK} diagnostico\_key\\nombre};
-        \node[tabla=3cm, anchor=east] (dv) at (-2.6,0) {\textcolor{white}{\textbf{dim\_vertebra}}\nodepart{two}\textbf{PK} vertebra\_key\\codigo\\orden\_craneocaudal\\\textbf{FK} region\_key};
-        \node[tabla=2.4cm, anchor=north] (dr) at ([yshift=-0.6cm]dv.south) {\textcolor{white}{\textbf{dim\_region}}\nodepart{two}\textbf{PK} region\_key\\nombre};
+        \node[hechos=3.7cm] (f) at (0,1.9) {\textcolor{white}{\textbf{fact\_vertebra\_anotada}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} vertebra\_key\\[0.3ex]area\_norm, alto\_norm, aspecto, relleno\\cy\_rel, \textbf{inclinacion}, excentricidad\\circularidad, solidez, hu1, hu2\\intensidad\_media, contraste\\es\_atipico, orden\_coherente};
+        \node[hechos=3.7cm] (fs) at (0,-2.2) {\textcolor{white}{\textbf{fact\_segmento}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} segmento\_key\\[0.3ex]delta\_inclinacion\\desplazamiento\_rel\\separacion\_rel};
+        \node[tabla=3.4cm, anchor=west] (di) at (4.6,0) {\textcolor{white}{\textbf{dim\_imagen}}\nodepart{two}\textbf{PK} imagen\_key\\split, resolucion, vista\\formato, canales, bits\\sexo, edad, grupo\_edad\\anotada, completa\\\textbf{FK} dataset\_key\\\textbf{FK} diagnostico\_key};
+        \node[tabla=2.6cm, anchor=west] (dd) at (8.6,1.4) {\textcolor{white}{\textbf{dim\_dataset}}\nodepart{two}\textbf{PK} dataset\_key\\nombre, licencia};
+        \node[tabla=2.6cm, anchor=west] (dg) at (8.6,-1.4) {\textcolor{white}{\textbf{dim\_diagnostico}}\nodepart{two}\textbf{PK} diagnostico\_key\\nombre};
+        \node[tabla=2.9cm, anchor=east] (dv) at (-2.9,1.9) {\textcolor{white}{\textbf{dim\_vertebra}}\nodepart{two}\textbf{PK} vertebra\_key\\codigo, orden\\\textbf{FK} region\_key};
+        \node[tabla=2.9cm, anchor=east] (ds) at (-2.9,-2.2) {\textcolor{white}{\textbf{dim\_segmento}}\nodepart{two}\textbf{PK} segmento\_key\\nombre (L1-L2 …)\\\textbf{FK} vertebra\_sup\_key\\\textbf{FK} vertebra\_inf\_key};
+        \node[tabla=2.3cm, anchor=south] (dr) at ([yshift=0.7cm]dv.north) {\textcolor{white}{\textbf{dim\_region}}\nodepart{two}\textbf{PK} region\_key\\nombre};
         \draw[rel] (di.west) -- (f.east);
+        \draw[rel] (di.west) -- (fs.east);
         \draw[rel] (dv.east) -- (f.west);
-        \draw[rel] (dr.north) -- (dv.south);
-        \draw[rel] (dd.west) -- ([yshift=0.4cm]di.east);
-        \draw[rel] (dg.west) -- ([yshift=-0.4cm]di.east);
-      \end{tikzpicture}}\\[1.5ex]
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \small
-      \begin{itemize}\setlength{\itemsep}{0.3ex}
-        \item \textbf{PK de hechos compuesta} por las claves de sus dimensiones.
-        \item \textbf{Copo de nieve:} región $\rightarrow$ vértebra, dataset $\rightarrow$ imagen, diagnóstico $\rightarrow$ imagen.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \small
-      \begin{itemize}\setlength{\itemsep}{0.3ex}
-        \item Sumar columna cervical o torácica = \textbf{agregar filas}; los hechos no cambian.
-        \item Miembro \textbf{«sin dato»} en \texttt{dim\_diagnostico}; se carga \textbf{desde la base transaccional}.
-      \end{itemize}
-    \end{column}
-  \end{columns}
+        \draw[rel] (ds.east) -- (fs.west);
+        \draw[rel] (dv.south) -- (ds.north);
+        \draw[rel] (dr.south) -- (dv.north);
+        \draw[rel] (dd.west) -- ([yshift=0.5cm]di.east);
+        \draw[rel] (dg.west) -- ([yshift=-0.5cm]di.east);
+      \end{tikzpicture}}\\[0.8ex]
+  {\scriptsize PK compuestas por las claves de sus dimensiones en ambas tablas de hechos · \texttt{dim\_segmento} se normaliza hacia \texttt{dim\_vertebra} · cervical o torácica = agregar filas · miembro «sin dato» · carga desde la base transaccional.}
 \end{frame}
 
 \begin{frame}{Cada métrica responde a una pregunta}
-  \footnotesize
-  \renewcommand{\arraystretch}{1.15}
+  \scriptsize
+  \renewcommand{\arraystretch}{1.1}
   \begin{tabularx}{\linewidth}{@{}lXl@{}}
     \toprule
     Métrica / atributo & Cálculo en el ETL & Responde \\ \midrule
@@ -522,9 +587,12 @@
     \texttt{es\_atipico}, \texttt{motivo\_atipico} & marca de calidad (Tukey, Mahalanobis, orden) & \textbf{\color{itba}P2} \\
     \texttt{alto\_norm}, \texttt{cy\_rel} & alto relativo a sus vecinas; centroide vertical / alto de la imagen & \textbf{\color{itba}P3} \\
     \texttt{orden\_coherente} & 1 si respeta el orden L1$\rightarrow$L5 & \textbf{\color{itba}P3} \\
-    diagnóstico, sexo, \texttt{grupo\_edad} & extraídos del nombre de archivo & \textbf{\color{itba}P4} \\ \bottomrule
-  \end{tabularx}\\[0.8ex]
-  \small No hay métricas que ninguna pregunta use.
+    diagnóstico, sexo, \texttt{grupo\_edad} & extraídos del nombre de archivo & \textbf{\color{itba}P4} \\
+    \texttt{excentricidad}, \texttt{circularidad}, \texttt{solidez}, \texttt{hu1/2} & momentos del contorno (OpenCV) & \textbf{\color{itba}P2} \\
+    \texttt{intensidad\_media}, \texttt{contraste} & píxeles dentro del polígono (máscara OpenCV) & \textbf{\color{itba}P2} \\
+    \texttt{inclinacion}; Cobb aproximado & eje principal por momentos; \texttt{MAX $-$ MIN} por imagen en la consulta & \textbf{\color{itba}P5} \\
+    \texttt{delta\_inclinacion}, \texttt{desplazamiento\_rel}, \texttt{separacion\_rel} & en \texttt{fact\_segmento}: ángulo, deslizamiento y espacio entre vecinas & \textbf{\color{itba}P5} \\ \bottomrule
+  \end{tabularx}
 \end{frame}
 
 % ===================================================================== resultados
@@ -541,6 +609,7 @@
         \item \textbf{P2:} calidad alta; 5 contornos a revisar.
         \item \textbf{P3:} orden y tamaño coherentes con la anatomía.
         \item \textbf{P4:} escoliosis 17, «S» 16, normales 9, listesis 8; mayoría mujeres y menores de 18.
+        \item \textbf{P5:} Cobb aproximado 36° en escoliosis vs. 7° en normales ($p < 0{,}001$).
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
@@ -561,7 +630,8 @@
       \begin{itemize}\setlength{\itemsep}{0.4ex}
         \item conjunto \textbf{piloto o de validación};
         \item banco de pruebas del pipeline de datos;
-        \item integrar otros datasets: el copo de nieve lo admite sin rediseño.
+        \item integrar otros datasets: el copo de nieve lo admite sin rediseño;
+        \item los contornos ya miden \textbf{alineación} (Cobb aproximado) para el SINS.
       \end{itemize}
     \end{column}
     \begin{column}{0.42\textwidth}
@@ -572,6 +642,7 @@
         \item Los metadatos dependen de la convención del nombre de archivo.
         \item Imagen $\neq$ paciente: no hay identificador de paciente.
         \item Umbral de 200 imágenes: supuesto explícito y ajustable.
+        \item Vista inferida del diagnóstico; \emph{twist} no medible en 2D; $n \approx 8$ por grupo.
       \end{itemize}
     \end{column}
   \end{columns}
@@ -588,6 +659,7 @@
         \item «ChatGPT 4.5» para «sugerir esquemas SQLite de la primera versión».
         \item «GitHub Copilot» para «autocompletar parsing YOLO y gráficos».
         \item «Claude Opus 5.5» para «reestructurar el notebook: extracción sin credenciales, control de calidad, modelos con claves compuestas y tablero».
+        \item «Claude Opus 5.5» para «implementar los momentos de OpenCV recomendados por el docente, el formato de píxel y la tabla de segmentos».
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
@@ -598,6 +670,7 @@
         \item Superposición de polígonos sobre la radiografía.
         \item Revisión manual del duplicado y de la tabla nombre $\rightarrow$ metadatos.
         \item Rechazo del área relativa a la imagen (49 falsos atípicos) y cambio a normalización por vecinas.
+        \item $m_{00}$ = área de Gauss; revisión visual de la vista por diagnóstico.
         \item Detección del desbordamiento \texttt{int16}.
         \item Cada métrica contrastada con P1–P4.
       \end{itemize}
@@ -726,6 +799,36 @@ GROUP BY i.imagen_id;
         \item Hechos: métricas recalculadas desde \texttt{vertice}, la fuente de verdad.
         \item \texttt{area\_norm} y \texttt{alto\_norm} se calculan con la mediana \textbf{por imagen} (\texttt{groupby + transform}).
         \item Validación: conteos por tabla y \texttt{PRAGMA foreign\_key\_check}.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{A5 · Momentos y Cobb aproximado}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+\begin{lstlisting}[language=Python]
+cnt = np.column_stack([x, y]).astype(np.float32)
+m = cv2.moments(cnt.reshape(-1, 1, 2))
+mu20 = m["mu20"] / m["m00"]
+mu02 = m["mu02"] / m["m00"]
+mu11 = m["mu11"] / m["m00"]
+theta = 0.5 * np.degrees(np.arctan2(2*mu11, mu20 - mu02))
+\end{lstlisting}
+\begin{lstlisting}[language=SQL]
+SELECT imagen_key,
+       MAX(inclinacion) - MIN(inclinacion) AS cobb_aprox
+FROM fact_vertebra_anotada
+GROUP BY imagen_key HAVING COUNT(*) >= 4;
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \small
+      \begin{itemize}\setlength{\itemsep}{0.5ex}
+        \item Los momentos centrales $\mu_{pq}$ son la «covarianza» del contorno: su eje principal es la dirección de máxima dispersión.
+        \item Divididos por $m_{00}$ no dependen del tamaño de la vértebra.
+        \item \texttt{atan2} resuelve el cuadrante; el ½ viene de la fórmula del ángulo doble.
+        \item Pruebas no paramétricas porque $n \approx 8$ y no hay normalidad.
       \end{itemize}
     \end{column}
   \end{columns}
