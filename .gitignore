@@ -37,3 +37,4 @@ spine_annotations.csv
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/lumbar-spine-vpxwf-v1-yolov8.zip
+!data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip

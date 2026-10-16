@@ -92,7 +92,7 @@
 
 \newcommand{\leer}[1]{\begin{block}{Cómo leerlo}\footnotesize #1\end{block}}
 \newcommand{\dice}[1]{\setbeamercolor{block title}{fg=white,bg=alerta}\setbeamercolor{block body}{fg=tinta,bg=alerta!8}\begin{block}{Qué nos dice}\footnotesize #1\end{block}}
-\title{¿Alcanza un dataset público de radiografías lumbares para entrenar el detector de vértebras de un CDSS de inestabilidad espinal?}
+\title{¿Alcanzan los datos públicos de radiografías lumbares para entrenar el detector de vértebras de un CDSS de inestabilidad espinal?}
 \author{Marcos Kantor}
 \date{Proyecto Final — Defensa académica}
 
@@ -165,7 +165,7 @@
         \toprule
         & \textbf{Preguntas de análisis} (guían el almacén y el tablero) \\
         \midrule
-        \textbf{\color{itba}P1} & \textbf{Cobertura y balance:} ¿cuántas imágenes tienen L1–L5 completas? ¿están balanceadas las clases? \\
+        \textbf{\color{itba}P1} & \textbf{Cobertura y balance:} ¿cuántas imágenes tienen L1–L5 completas? ¿están balanceadas las clases? ¿Y sumando una segunda fuente? \\
         \textbf{\color{itba}P2} & \textbf{Calidad geométrica:} ¿qué anotaciones tienen tamaño o forma atípicos para su vértebra? \\
         \textbf{\color{itba}P3} & \textbf{Coherencia anatómica:} ¿se respeta el orden L1$\rightarrow$L5 y el aumento de tamaño hacia caudal? \\
         \textbf{\color{itba}P4} & \textbf{Representatividad:} ¿qué diagnósticos, sexos y edades cubre? \\
@@ -200,6 +200,31 @@
   \end{columns}
 \end{frame}
 
+\begin{frame}{Segunda fuente: NHANES L1–L5}{Para responder P1 y el veredicto con más datos}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \dato{4.436}{radiografías de perfil}\dato{22.185}{cajas L1–L5}
+      \end{center}
+      \small
+      \begin{itemize}\setlength{\itemsep}{0.5ex}
+        \item Radiografías lumbares de la encuesta nacional de salud \textbf{NHANES} (EE.\,UU.), anotadas en Roboflow Universe (\texttt{main-kybbe}), \textbf{CC BY 4.0}.
+        \item Anotadas con \textbf{cajas}, no polígonos, y estiradas a 640$\times$640 por la fuente.
+        \item Se publica en GitHub \textbf{sólo la anotación COCO} (542 KB): P1 necesita qué vértebras hay, no los píxeles.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}
+      \begin{block}{Qué responde y qué no}
+        \footnotesize
+        \textbf{Sí:} P1 (cobertura y veredicto) y P3 (orden y orientación).\\[0.4ex]
+        \textbf{No:} P2 y P5. Una caja alineada con los ejes no tiene forma ni inclinación; P4 tampoco, porque no trae metadatos clínicos.
+      \end{block}
+      \vspace{0.6ex}
+      \footnotesize\color{gris}Se integra al mismo modelo: nueva fila en \texttt{dataset}, \texttt{imagen.dataset\_id} y \texttt{anotacion.geometria} = \texttt{caja}.
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ===================================================================== demo
 \separador{Demostración del tablero}
 
@@ -207,26 +232,26 @@
   \centering\includegraphics[width=0.88\linewidth]{fig/tablero_principal.png}\\[0.6ex]
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
-      \leer{Arriba, la pregunta de investigación. Debajo, cinco indicadores (imágenes, anotadas, completas, \% atípicas, errores de orden) y un \textbf{veredicto en color}: rojo = no alcanza, amarillo = alcanza para ajuste fino, verde = apto.}
+      \leer{Arriba, la pregunta. Debajo, cinco indicadores, un \textbf{veredicto en color} (rojo = no alcanza, amarillo = ajuste fino, verde = apto) y la tabla por fuente.}
     \end{column}
     \begin{column}{0.48\textwidth}
-      \dice{Con 33 imágenes completas el dataset \textbf{no alcanza para entrenar} el detector. El mínimo (200) es un supuesto: se cambia en la barra lateral y el veredicto se recalcula en vivo, igual que con los filtros de diagnóstico y sexo.}
+      \dice{Con las dos fuentes hay \textbf{4.438 imágenes completas}: apto. Si se deja sólo Lumbar Spine (filtro «Fuente»), vuelve el rojo: 33 no alcanzan. El mínimo (200) es un supuesto ajustable.}
     \end{column}
   \end{columns}
 \end{frame}
 
 \begin{frame}{Tablero P1 · ¿Cuántas imágenes están completas?}
   \begin{columns}[T]
-    \begin{column}{0.47\textwidth}
+    \begin{column}{0.33\textwidth}
       \centering\includegraphics[height=5.2cm]{fig/tab_cobertura.pdf}
     \end{column}
-    \begin{column}{0.27\textwidth}
-      \centering\includegraphics[width=\linewidth]{fig/tab_balance.pdf}\\[-0.5ex]
-      {\scriptsize Anotaciones por vértebra}
+    \begin{column}{0.41\textwidth}
+      \centering\includegraphics[width=\linewidth]{fig/tab_fuentes.pdf}\\[-0.5ex]
+      {\scriptsize Imágenes completas por fuente}
     \end{column}
     \begin{column}{0.25\textwidth}
-      \leer{Izquierda: \textbf{cada fila es una radiografía} y cada columna una vértebra. Azul = anotada, rojo = anotada pero atípica, gris = falta.}
-      \dice{33 radiografías completas; \textbf{16 sin ninguna anotación}. Las clases están balanceadas (33–34 por vértebra).}
+      \leer{Izquierda (Lumbar Spine): \textbf{cada fila es una radiografía}; azul = anotada, rojo = atípica, gris = falta. Derecha: completas por fuente y el mínimo.}
+      \dice{Lumbar Spine: 33 completas y \textbf{16 sin anotar}. NHANES: \textbf{4.405}. Sumadas superan el mínimo.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -238,12 +263,12 @@
       {\scriptsize Posición de cada vértebra en su radiografía}
     \end{column}
     \begin{column}{0.37\textwidth}
-      \centering\includegraphics[width=\linewidth]{fig/tab_alto.pdf}\\[-0.3ex]
-      {\scriptsize Alto de cada vértebra comparado con sus vecinas}
+      \centering\includegraphics[width=\linewidth]{fig/tab_orientacion.pdf}\\[-0.3ex]
+      {\scriptsize Orientación de las radiografías}
     \end{column}
     \begin{column}{0.24\textwidth}
-      \leer{Izquierda: \textbf{cada línea es una radiografía}; debe bajar de L1 a L5. Derecha: 1 = alto típico de las vértebras de esa imagen.}
-      \dice{Todas las líneas bajan: \textbf{0 errores de orden}. El alto crece de L1 a L5, como en la anatomía real.}
+      \leer{Izquierda: \textbf{cada línea es una radiografía}; debe bajar de L1 a L5. Derecha: cuántas están derechas, giradas o invertidas.}
+      \dice{Lumbar Spine: 0 errores. NHANES: \textbf{477 giradas o invertidas} (11\,\%) y sólo 26 cajas mal etiquetadas.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -287,7 +312,7 @@
                    text width=2.15cm, align=center, font=\scriptsize},
       fase/.style={font=\scriptsize\bfseries, text=itba},
       flecha/.style={-{Latex[length=2mm]}, draw=itba, line width=0.9pt}]
-    \node[paso] (e1) {Zip crudo en GitHub\\\textbf{SHA-256}};
+    \node[paso] (e1) {2 zips crudos en GitHub\\\textbf{SHA-256}};
     \node[paso, right=0.45cm of e1] (e2) {Inventario por imagen\\+ metadatos};
     \node[paso, right=0.45cm of e2] (e3) {Parsing de polígonos\\(Gauss)};
     \node[paso, right=0.45cm of e3] (e4) {Staging CSV\\anotaciones, vértices};
@@ -457,6 +482,26 @@
   \end{columns}
 \end{frame}
 
+\begin{frame}{NHANES: control de calidad a escala}{Las mismas reglas de dominio, sobre 22.185 cajas}
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \footnotesize
+      \begin{itemize}\setlength{\itemsep}{0.6ex}
+        \item \textbf{Duplicados:} 36 imágenes con una vértebra repetida; se conserva la caja más cerca de la posición típica.
+        \item \textbf{Primer intento del control de orden:} marcó \textcolor{alerta}{\textbf{1.709 cajas}}. Al revisarlas, no eran errores: eran \textbf{radiografías giradas 90° o invertidas}.
+        \item \textbf{Rediseño:} primero se detecta la \textbf{orientación} (hacia dónde se extiende la columna) y después se exige un orden monótono \textbf{a lo largo del eje}, en cualquier sentido.
+        \item Resultado: \textbf{26 cajas en 13 imágenes} son errores reales (p.\,ej. L1 y L2 con la misma caja).
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \centering\includegraphics[height=3.9cm]{fig/tab_orientacion.pdf}\\[0.2ex]
+      \begin{block}{Para el detector}
+        \footnotesize Un 11\,\% de NHANES está girada o invertida: hay que \textbf{normalizar la orientación} antes de entrenar.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 % ===================================================================== OLTP
 \separador{Descriptores de forma con OpenCV}
 
@@ -539,8 +584,8 @@
   \begin{tikzpicture}[node distance=0.5cm]
     \tab{dataset}{(0,2.6)}{\textbf{PK} dataset\_id\\nombre, fuente, version\\licencia, sha256}
     \tab{diagnostico}{(0,0)}{\textbf{PK} diagnostico\_id\\nombre}
-    \tab[3.2cm]{imagen}{(4.1,1.3)}{\textbf{PK} imagen\_id\\\textbf{FK} dataset\_id\\\textbf{FK} diagnostico\_id\\archivo, split, vista\\ancho\_px, alto\_px, anotada\\formato, canales, bits, tamaño\\sexo, edad, nivel\_listesis}
-    \tab[3.3cm]{anotacion}{(8.4,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\es\_atipico\\orden\_coherente\\motivo\_atipico}
+    \tab[3.2cm]{imagen}{(4.1,1.3)}{\textbf{PK} imagen\_id\\\textbf{FK} dataset\_id\\\textbf{FK} diagnostico\_id\\archivo, split, vista, orientación\\ancho\_px, alto\_px, anotada\\formato, canales, bits, tamaño\\sexo, edad, nivel\_listesis}
+    \tab[3.3cm]{anotacion}{(8.4,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\es\_atipico\\orden\_coherente\\motivo\_atipico\\geometria}
     \tab[3.3cm]{vertice}{(12.6,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\\textbf{PK} orden\\x\_px, y\_px}
     \tab{vertebra}{(8.4,-1.6)}{\textbf{PK} vertebra\_id\\codigo, orden\_craneocaudal\\\textbf{FK} region\_id}
     \tab{region}{(4.1,-1.6)}{\textbf{PK} region\_id\\nombre}
@@ -585,12 +630,12 @@
 
 \begin{frame}{Copo de nieve con dos tablas de hechos}{Constelación de hechos: comparten dimensiones, cada una con su grano}
   \centering
-  \resizebox{!}{5.5cm}{%
+  \resizebox{!}{5.2cm}{%
       \begin{tikzpicture}
-        \node[hechos=3.7cm] (f) at (0,1.9) {\textcolor{white}{\textbf{fact\_vertebra\_anotada}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} vertebra\_key\\[0.3ex]area\_norm, alto\_norm, aspecto, relleno\\cy\_rel, \textbf{inclinacion}, excentricidad\\circularidad, solidez, hu1, hu2\\intensidad\_media, contraste\\es\_atipico, orden\_coherente};
+        \node[hechos=3.7cm] (f) at (0,1.9) {\textcolor{white}{\textbf{fact\_vertebra\_anotada}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} vertebra\_key\\[0.3ex]area\_norm, alto\_norm, aspecto, relleno\\cy\_rel, \textbf{inclinacion}, excentricidad\\circularidad, solidez, hu1, hu2\\intensidad\_media, contraste\\es\_atipico, orden\_coherente, geometria};
         \node[hechos=3.7cm] (fs) at (0,-2.2) {\textcolor{white}{\textbf{fact\_segmento}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} segmento\_key\\[0.3ex]delta\_inclinacion\\desplazamiento\_rel\\separacion\_rel};
-        \node[tabla=3.4cm, anchor=west] (di) at (4.6,0) {\textcolor{white}{\textbf{dim\_imagen}}\nodepart{two}\textbf{PK} imagen\_key\\split, resolucion, vista\\formato, canales, bits\\sexo, edad, grupo\_edad\\anotada, completa\\\textbf{FK} dataset\_key\\\textbf{FK} diagnostico\_key};
-        \node[tabla=2.6cm, anchor=west] (dd) at (8.6,1.4) {\textcolor{white}{\textbf{dim\_dataset}}\nodepart{two}\textbf{PK} dataset\_key\\nombre, licencia};
+        \node[tabla=3.4cm, anchor=west] (di) at (4.6,0) {\textcolor{white}{\textbf{dim\_imagen}}\nodepart{two}\textbf{PK} imagen\_key\\split, resolucion, vista\\orientacion, formato, bits\\sexo, edad, grupo\_edad\\anotada, completa\\\textbf{FK} dataset\_key\\\textbf{FK} diagnostico\_key};
+        \node[tabla=2.6cm, anchor=west] (dd) at (8.6,1.4) {\textcolor{white}{\textbf{dim\_dataset}}\nodepart{two}\textbf{PK} dataset\_key\\nombre, licencia\\(2 fuentes)};
         \node[tabla=2.6cm, anchor=west] (dg) at (8.6,-1.4) {\textcolor{white}{\textbf{dim\_diagnostico}}\nodepart{two}\textbf{PK} diagnostico\_key\\nombre};
         \node[tabla=2.9cm, anchor=east] (dv) at (-2.9,1.9) {\textcolor{white}{\textbf{dim\_vertebra}}\nodepart{two}\textbf{PK} vertebra\_key\\codigo, orden\\\textbf{FK} region\_key};
         \node[tabla=2.9cm, anchor=east] (ds) at (-2.9,-2.2) {\textcolor{white}{\textbf{dim\_segmento}}\nodepart{two}\textbf{PK} segmento\_key\\nombre (L1-L2 …)\\\textbf{FK} vertebra\_sup\_key\\\textbf{FK} vertebra\_inf\_key};
@@ -631,16 +676,16 @@
 % ===================================================================== resultados
 \begin{frame}{Resultados}
   \begin{center}
-    \dato{33}{imágenes completas L1–L5}\dato{1{,}03}{razón máx/mín entre clases}\dato{5}{anotaciones atípicas (3\,\%)}\dato{0}{violaciones del orden L1$\rightarrow$L5}
+    \dato{4.438}{completas L1–L5 (33 + 4.405)}\dato{1{,}03}{razón máx/mín entre clases}\dato{477}{radiografías giradas o invertidas}\dato{36°}{Cobb en escoliosis (7° normales)}
   \end{center}
-  \vspace{1ex}
+  \vspace{0.3ex}
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
-      \small
-      \begin{itemize}\setlength{\itemsep}{0.6ex}
-        \item \textbf{P1:} clases balanceadas, pero un tercio de las imágenes sin anotar.
+      \footnotesize
+      \begin{itemize}\setlength{\itemsep}{0.3ex}
+        \item \textbf{P1:} Lumbar Spine sola no alcanza; con NHANES, sí.
         \item \textbf{P2:} calidad alta; 5 contornos a revisar.
-        \item \textbf{P3:} orden y tamaño coherentes con la anatomía.
+        \item \textbf{P3:} orden coherente; 11\,\% de NHANES girada o invertida.
         \item \textbf{P4:} escoliosis 17, «S» 16, normales 9, listesis 8; mayoría mujeres y menores de 18.
         \item \textbf{P5:} Cobb aproximado 36° en escoliosis vs. 7° en normales ($p < 0{,}001$).
       \end{itemize}
@@ -655,15 +700,14 @@
   \begin{columns}[c]
     \begin{column}{0.55\textwidth}
       \begin{block}{Respuesta a la pregunta de investigación}
-        \small El dataset tiene anotaciones \textbf{de buena calidad} y \textbf{anatómicamente coherentes}, pero con \textbf{33 imágenes completas} no alcanza para entrenar el detector del CDSS: es el 16\,\% del mínimo supuesto (200).
+        \small \textbf{Lumbar Spine sola no alcanza} (33 completas, 16\,\% del mínimo). \textbf{Sumando NHANES sí}: 4.438 imágenes completas, con dos condiciones: \textbf{normalizar la orientación} y \textbf{sumar vistas de frente}, que hoy sólo aporta Lumbar Spine.
       \end{block}
       \vspace{1ex}
       \small
       \textbf{Uso recomendado en la tesis:}
       \begin{itemize}\setlength{\itemsep}{0.4ex}
-        \item conjunto \textbf{piloto o de validación};
-        \item banco de pruebas del pipeline de datos;
-        \item integrar otros datasets: el copo de nieve lo admite sin rediseño;
+        \item NHANES para entrenar el detector; Lumbar Spine para \textbf{validar} y para forma y alineación;
+        \item la segunda fuente entró \textbf{sin rediseñar} el copo de nieve (filas nuevas en \texttt{dim\_dataset});
         \item los contornos ya miden \textbf{alineación} (Cobb aproximado) para el SINS.
       \end{itemize}
     \end{column}
@@ -674,7 +718,8 @@
         \item El código «S» no está documentado por la fuente.
         \item Los metadatos dependen de la convención del nombre de archivo.
         \item Imagen $\neq$ paciente: no hay identificador de paciente.
-        \item Umbral de 200 imágenes: supuesto explícito y ajustable.
+        \item Umbral de 200 imágenes: supuesto ajustable.
+        \item NHANES: sólo perfil, cajas estiradas, sin metadatos.
         \item Vista inferida del diagnóstico; \emph{twist} no medible en 2D; $n \approx 8$ por grupo.
       \end{itemize}
     \end{column}
@@ -692,7 +737,7 @@
         \item «ChatGPT 4.5» para «sugerir esquemas SQLite de la primera versión».
         \item «GitHub Copilot» para «autocompletar parsing YOLO y gráficos».
         \item «Claude Opus 5.5» para «reestructurar el notebook: extracción sin credenciales, control de calidad, modelos con claves compuestas y tablero».
-        \item «Claude Opus 5.5» para «implementar los momentos de OpenCV recomendados por el docente, el formato de píxel y la tabla de segmentos».
+        \item «Claude Opus 5.5» para «implementar los momentos de OpenCV recomendados por el docente, el formato de píxel, la tabla de segmentos e integrar NHANES como segunda fuente».
       \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
@@ -705,6 +750,7 @@
         \item Rechazo del área relativa a la imagen (49 falsos atípicos) y cambio a normalización por vecinas.
         \item $m_{00}$ = área de Gauss; revisión visual de la vista por diagnóstico.
         \item Detección del desbordamiento \texttt{int16}.
+        \item 1.709 «errores de orden» en NHANES: revisados, eran imágenes giradas.
         \item Cada métrica contrastada con P1–P4.
       \end{itemize}
     \end{column}
