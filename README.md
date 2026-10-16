@@ -18,7 +18,7 @@
 
 | Entrega | Tema | Archivos | Colab |
 |---|---|---|---|
-| [🎓 Proyecto Final](#-proyecto-final) | Calidad de un dataset de vértebras lumbares para un CDSS de inestabilidad espinal | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) · [`app.py`](./app.py) · [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
+| [🎓 Proyecto Final](#-proyecto-final) | ¿Alcanzan los datos públicos de radiografías lumbares para entrenar el detector de vértebras de un CDSS de inestabilidad espinal? | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) · [`app.py`](./app.py) · [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
 | [📘 TP1](#-tp1--ingesta-y-exploración-de-gdelt-20) | Ingesta y exploración de GDELT 2.0 | [`TP1.ipynb`](./TP1.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP1.ipynb) |
 | [📊 TP2](#-tp2--modelado-oltp--olap) | Modelado transaccional y dimensional (GDELT / CAMEO) | [`TP2.md`](./TP2.md) · [`TP2.drawio`](./TP2.drawio) | — |
 | [📈 TP3](#-tp3--análisis-multivariante) | Análisis multivariante del ecosistema global de noticias | [`TP3.ipynb`](./TP3.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP3.ipynb) |
@@ -32,13 +32,13 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 
 ## 🩺 Pregunta de investigación
 
-> **¿El dataset público *Lumbar Spine* (Roboflow Universe) tiene la cobertura, el balance, la calidad geométrica y la coherencia anatómica necesarias para entrenar el detector de vértebras L1–L5 de un sistema de soporte a la decisión clínica (CDSS) orientado al SINS?**
+> **¿Los datos públicos de radiografías lumbares tienen la cobertura, el balance, la calidad geométrica y la coherencia anatómica necesarias para entrenar el detector de vértebras L1–L5 de un sistema de soporte a la decisión clínica (CDSS) orientado al SINS?**
 
 | # | Pregunta de análisis | Responde con |
 |---|---|---|
-| P1 | ¿Cuántas imágenes tienen L1–L5 completas y qué tan balanceadas están las clases? | imágenes completas, anotaciones por vértebra |
+| P1 | ¿Cuántas imágenes tienen L1–L5 completas y qué tan balanceadas están las clases? ¿Alcanza sumando una segunda fuente? | imágenes completas por fuente, anotaciones por vértebra |
 | P2 | ¿Qué anotaciones tienen tamaño o forma atípicos para su vértebra? | área relativa a sus vecinas, aspecto, relleno, marca de atípico |
-| P3 | ¿Se respeta el orden L1→L5 y el aumento de tamaño hacia caudal? | posición vertical relativa, alto relativo, orden coherente |
+| P3 | ¿Se respeta el orden L1→L5 y el aumento de tamaño hacia caudal? ¿Cómo están orientadas las radiografías? | posición relativa, alto relativo, orden coherente, orientación |
 | P4 | ¿Qué diagnósticos, sexos y edades cubre? | imágenes y completas por diagnóstico, sexo y grupo de edad |
 | P5 | ¿La inclinación y el desplazamiento medidos con **momentos de imagen (OpenCV)** distinguen las patologías? | inclinación por vértebra, Cobb aproximado, desplazamiento entre vértebras vecinas |
 
@@ -48,10 +48,23 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 |---|---|
 | Entregable técnico (Colab reproducible) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
-| Presentación de la defensa (PDF, 39 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
-| Dato crudo | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) |
+| Presentación de la defensa (PDF, 41 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
+| Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
 
-## 🧬 Dataset
+## 🧬 Datos
+
+Dos fuentes públicas (CC BY 4.0), descargadas por URL pública de este repositorio y verificadas por **SHA-256** (Roboflow exige API key):
+
+| | Lumbar Spine (principal) | NHANES L1–L5 (segunda fuente) |
+|---|---|---|
+| Origen | [rp-team/lumbar-spine-vpxwf](https://universe.roboflow.com/rp-team/lumbar-spine-vpxwf) v1 | [main-kybbe/roboflow_nhanes_l1_to_l5_detection](https://universe.roboflow.com/main-kybbe/roboflow_nhanes_l1_to_l5_detection-npahn) v1 |
+| Imágenes | 50 radiografías (34 anotadas), frente y perfil | 4.436 radiografías de perfil (encuesta de salud NHANES, EE. UU.) |
+| Anotación | polígonos L1–L5 | cajas L1–L5 (estiradas a 640×640) |
+| Metadatos | diagnóstico, sexo y edad en el nombre de archivo | — |
+| Copia en el repo | zip YOLOv8 completo | sólo las anotaciones COCO (542 KB) |
+| Responde | P1–P5 | P1 y P3 (las cajas no tienen forma ni inclinación) |
+
+Detalle de la fuente principal:
 
 | Campo | Valor |
 |---|---|
@@ -67,9 +80,9 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 
 | Etapa | Qué se hace | Artefacto |
 |---|---|---|
-| Extracción | Descarga por URL pública, verificación SHA-256, idempotente | zip crudo |
+| Extracción | Dos fuentes por URL pública, verificación SHA-256, idempotente | 2 zips crudos |
 | Transformación | Inventario por imagen, metadatos clínicos por expresiones regulares, parsing de polígonos (fórmula de Gauss), carga optimizada (`usecols` + tipado) | staging CSV |
-| Calidad | Faltantes en tres niveles, duplicados (imagen, vértebra), inválidos geométricos, atípicos (Shapiro-Wilk → Tukey 2·IQR, Mahalanobis robusta) sobre variables normalizadas por imagen, control del orden craneocaudal L1→L5 | marcas de calidad |
+| Calidad | Faltantes en tres niveles, orientación de cada radiografía (vertical / girada 90° / invertida), duplicados (imagen, vértebra), inválidos geométricos, atípicos (Shapiro-Wilk → Tukey 2·IQR, Mahalanobis robusta) sobre variables normalizadas por imagen, control del orden craneocaudal L1→L5 | marcas de calidad |
 | Descriptores OpenCV | Momentos de cada contorno (`cv2.moments`): área, centroide, **inclinación** por momentos centrales, excentricidad, circularidad, solidez, momentos de Hu; formato de píxel (formato, canales, bits) e intensidad y contraste dentro de cada polígono; segmentos intervertebrales y Cobb aproximado | columnas nuevas |
 | Carga transaccional | SQLite en 3FN: `dataset`, `diagnostico`, `region`, `vertebra`, `imagen` (con formato de píxel y vista), `anotacion` (PK compuesta), `vertice` (PK compuesta) | `spine_oltp.db` |
 | Almacén | Copo de nieve con **dos tablas de hechos** (constelación): `fact_vertebra_anotada` (grano vértebra) y `fact_segmento` (grano segmento intervertebral), ambas con PK compuesta por sus dimensiones; `dim_imagen → dim_dataset / dim_diagnostico`, `dim_vertebra → dim_region`, `dim_segmento → dim_vertebra` | `spine_dw.db` |
@@ -79,13 +92,14 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 
 | Indicador | Valor |
 |---|---|
-| Imágenes completas L1–L5 | 33 de 50 |
+| Imágenes completas L1–L5 | 33 (Lumbar Spine) + 4.405 (NHANES) = **4.438** |
+| Radiografías de NHANES giradas o invertidas | 477 (11 %) |
 | Razón máx/mín entre clases | 1,03 |
 | Anotaciones atípicas | 5 de 169 (3 %) |
 | Violaciones del orden L1→L5 | 0 |
 | Cobb aproximado (mediana), escoliosis vs. normales | 36° vs. 7° (Mann-Whitney, p < 0,001) |
 
-**Veredicto:** anotaciones de buena calidad y anatómicamente coherentes, pero con 33 imágenes completas el dataset **no alcanza para entrenar** el detector del CDSS; sirve como conjunto piloto o de validación. Las 16 imágenes sin anotar son todas de escoliosis o del código «S»: el faltante no es aleatorio. Con los momentos de imagen, los contornos ya permiten medir alineación: el Cobb aproximado separa las columnas escolióticas de las normales, un primer paso hacia el criterio de alineación del SINS.
+**Veredicto:** Lumbar Spine sola **no alcanza** (33 imágenes completas). Sumando NHANES, los datos públicos **sí alcanzan para entrenar** el detector, con dos condiciones que dejó a la vista el control de calidad: **normalizar la orientación** (11 % de NHANES girada o invertida) y **sumar vistas de frente**, que hoy sólo aporta Lumbar Spine. Las 16 imágenes sin anotar son todas de escoliosis o del código «S»: el faltante no es aleatorio. Con los momentos de imagen, los contornos ya permiten medir alineación: el Cobb aproximado separa las columnas escolióticas de las normales, un primer paso hacia el criterio de alineación del SINS.
 
 ---
 
@@ -141,7 +155,7 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
     ├── app.py                        # 🖥️ Tablero Streamlit
     ├── Proyecto_final_defensa.pdf    # 🎤 Presentación de la defensa
     ├── defensa/                      # Fuente LaTeX (Beamer) y figuras de la defensa
-    ├── data/raw/                     # Dato crudo del proyecto final (CC BY 4.0)
+    ├── data/raw/                     # Datos crudos del proyecto final (CC BY 4.0): Lumbar Spine y NHANES
     ├── TP1.ipynb                  # 📘 TP1
     ├── TP2.md · TP2.drawio           # 📊 TP2
     ├── TP3.ipynb                     # 📈 TP3
@@ -171,7 +185,7 @@ Cada notebook incluye su propia declaración y su guía de instrucciones (*human
 - **"Claude Sonnet 4.5"** para "asistir en la redacción de celdas Markdown y justificaciones metodológicas".
 - **"ChatGPT 4.5"** para "sugerir estructuras de esquemas SQLite en la primera versión del proyecto final".
 - **"GitHub Copilot"** para "autocompletar parsing de anotaciones YOLO y gráficos con Plotly/Streamlit".
-- **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas, tablero y presentación de la defensa), implementar los momentos de OpenCV recomendados por el docente, aplicar las correcciones del TP2 y desarrollar el TP4".
+- **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas, tablero y presentación de la defensa), implementar los momentos de OpenCV recomendados por el docente, integrar NHANES como segunda fuente, aplicar las correcciones del TP2 y desarrollar el TP4".
 
 Las decisiones metodológicas fueron definidas y validadas por el autor.
 
