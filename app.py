@@ -19,7 +19,7 @@ def cargar():
     hechos = pd.read_sql("""
         SELECT i.archivo, i.split, i.resolucion, i.sexo, i.grupo_edad, d.nombre AS diagnostico,
                v.codigo AS vertebra, v.orden_craneocaudal,
-               f.area_norm, f.alto_norm, f.aspecto, f.relleno, f.cy_rel,
+               f.area_norm, f.alto_norm, f.aspecto, f.relleno, f.cy_rel, f.inclinacion, i.vista,
                f.es_atipico, f.orden_coherente, f.motivo_atipico
         FROM fact_vertebra_anotada f
         JOIN dim_vertebra v     USING (vertebra_key)
@@ -29,11 +29,18 @@ def cargar():
         SELECT i.archivo, i.split, i.resolucion, i.sexo, i.grupo_edad, i.anotada, i.vertebras_anotadas, i.completa,
                d.nombre AS diagnostico
         FROM dim_imagen i JOIN dim_diagnostico d ON d.diagnostico_key = i.diagnostico_key""", con)
+    segmentos = pd.read_sql("""
+        SELECT i.archivo, d.nombre AS diagnostico, i.vista, s.nombre AS segmento,
+               f.delta_inclinacion, f.desplazamiento_rel, f.separacion_rel
+        FROM fact_segmento f
+        JOIN dim_segmento s    USING (segmento_key)
+        JOIN dim_imagen i      USING (imagen_key)
+        JOIN dim_diagnostico d ON d.diagnostico_key = i.diagnostico_key""", con)
     con.close()
-    return hechos, imagenes
+    return hechos, imagenes, segmentos
 
 
-hechos, imagenes = cargar()
+hechos, imagenes, segmentos = cargar()
 
 # ------------------------------------------------------------------ barra lateral
 st.sidebar.header("Filtros")
@@ -145,10 +152,35 @@ with col_b:
                        category_orders={"grupo_edad": ["<18", "18-39", "40-64", "65+", "sin dato"]})
     st.plotly_chart(fig, width="stretch")
 
+# ------------------------------------------------------------------ P5 alineación
+st.subheader("P5 · Alineación medida con momentos de imagen (OpenCV)")
+st.caption("La inclinación de cada vértebra es el ángulo del eje principal de su contorno, "
+           "θ = ½·atan2(2μ11, μ20 − μ02). En radiografías de frente el rango L1–L5 aproxima el ángulo de Cobb (escoliosis); "
+           "en las de perfil (espondilolistesis) refleja la lordosis.")
+cobb = (h.groupby(["archivo", "diagnostico", "vista"])
+        .agg(cobb_aprox=("inclinacion", lambda s: s.max() - s.min()), vertebras=("inclinacion", "size"))
+        .query("vertebras >= 4").reset_index())
+seg = segmentos[segmentos["archivo"].isin(img["archivo"])].assign(desplazamiento=lambda d: d["desplazamiento_rel"].abs())
+col_a, col_b = st.columns(2)
+with col_a:
+    fig = px.box(cobb, x="diagnostico", y="cobb_aprox", color="vista", points="all",
+                 color_discrete_map={"frente": AZUL, "perfil": ROJO},
+                 title="Cobb aproximado por imagen", labels={"cobb_aprox": "grados", "diagnostico": ""})
+    st.plotly_chart(fig, width="stretch")
+with col_b:
+    med = seg.groupby(["diagnostico", "segmento"], as_index=False)["desplazamiento"].median()
+    fig = px.line(med, x="segmento", y="desplazamiento", color="diagnostico", markers=True,
+                  title="Desplazamiento entre vértebras vecinas (mediana)",
+                  labels={"desplazamiento": "|desplazamiento| / ancho de la vértebra", "segmento": ""})
+    st.plotly_chart(fig, width="stretch")
+resumen_p5 = cobb.groupby(["vista", "diagnostico"])["cobb_aprox"].median().round(1).rename("Cobb aprox. (mediana, °)")
+st.dataframe(resumen_p5.reset_index(), width="stretch", hide_index=True)
+
 st.divider()
 st.markdown(
     "**Mensaje.** El dataset tiene clases balanceadas y anotaciones geométricamente consistentes, "
     "pero una parte de las imágenes no está anotada y las completas son pocas: alcanza para validar el pipeline del CDSS "
-    "y como conjunto de prueba, no para entrenar el detector. La espondilolistesis incluida es directamente relevante "
-    "para el criterio de **alineación** del SINS."
+    "y como conjunto de prueba, no para entrenar el detector. Además, los contornos ya contienen información clínica: "
+    "con momentos de imagen, el Cobb aproximado separa las columnas escolióticas de las normales, un primer paso hacia el "
+    "criterio de **alineación** del SINS."
 )

@@ -40,6 +40,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | P2 | ¿Qué anotaciones tienen tamaño o forma atípicos para su vértebra? | área relativa a sus vecinas, aspecto, relleno, marca de atípico |
 | P3 | ¿Se respeta el orden L1→L5 y el aumento de tamaño hacia caudal? | posición vertical relativa, alto relativo, orden coherente |
 | P4 | ¿Qué diagnósticos, sexos y edades cubre? | imágenes y completas por diagnóstico, sexo y grupo de edad |
+| P5 | ¿La inclinación y el desplazamiento medidos con **momentos de imagen (OpenCV)** distinguen las patologías? | inclinación por vértebra, Cobb aproximado, desplazamiento entre vértebras vecinas |
 
 ## 📦 Entregables
 
@@ -47,7 +48,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 |---|---|
 | Entregable técnico (Colab reproducible) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
-| Presentación de la defensa (PDF) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
+| Presentación de la defensa (PDF, 37 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
 | Dato crudo | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) |
 
 ## 🧬 Dataset
@@ -69,9 +70,10 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | Extracción | Descarga por URL pública, verificación SHA-256, idempotente | zip crudo |
 | Transformación | Inventario por imagen, metadatos clínicos por expresiones regulares, parsing de polígonos (fórmula de Gauss), carga optimizada (`usecols` + tipado) | staging CSV |
 | Calidad | Faltantes en tres niveles, duplicados (imagen, vértebra), inválidos geométricos, atípicos (Shapiro-Wilk → Tukey 2·IQR, Mahalanobis robusta) sobre variables normalizadas por imagen, control del orden craneocaudal L1→L5 | marcas de calidad |
-| Carga transaccional | SQLite en 3FN: `dataset`, `diagnostico`, `region`, `vertebra`, `imagen`, `anotacion` (PK compuesta), `vertice` (PK compuesta) | `spine_oltp.db` |
-| Almacén | Copo de nieve, grano "vértebra anotada por imagen": `fact_vertebra_anotada` (PK compuesta por sus dimensiones), `dim_imagen → dim_dataset / dim_diagnostico`, `dim_vertebra → dim_region` | `spine_dw.db` |
-| Visualización | Tablero con veredicto ajustable, cobertura imagen × vértebra, balance, progresión anatómica, atípicos y representatividad | `app.py` |
+| Descriptores OpenCV | Momentos de cada contorno (`cv2.moments`): área, centroide, **inclinación** por momentos centrales, excentricidad, circularidad, solidez, momentos de Hu; formato de píxel (formato, canales, bits) e intensidad y contraste dentro de cada polígono; segmentos intervertebrales y Cobb aproximado | columnas nuevas |
+| Carga transaccional | SQLite en 3FN: `dataset`, `diagnostico`, `region`, `vertebra`, `imagen` (con formato de píxel y vista), `anotacion` (PK compuesta), `vertice` (PK compuesta) | `spine_oltp.db` |
+| Almacén | Copo de nieve con **dos tablas de hechos** (constelación): `fact_vertebra_anotada` (grano vértebra) y `fact_segmento` (grano segmento intervertebral), ambas con PK compuesta por sus dimensiones; `dim_imagen → dim_dataset / dim_diagnostico`, `dim_vertebra → dim_region`, `dim_segmento → dim_vertebra` | `spine_dw.db` |
+| Visualización | Tablero con veredicto ajustable, cobertura imagen × vértebra, balance, progresión anatómica, atípicos, representatividad y alineación (P5) | `app.py` |
 
 ## 📌 Resultados
 
@@ -81,8 +83,9 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | Razón máx/mín entre clases | 1,03 |
 | Anotaciones atípicas | 5 de 169 (3 %) |
 | Violaciones del orden L1→L5 | 0 |
+| Cobb aproximado (mediana), escoliosis vs. normales | 36° vs. 7° (Mann-Whitney, p < 0,001) |
 
-**Veredicto:** anotaciones de buena calidad y anatómicamente coherentes, pero con 33 imágenes completas el dataset **no alcanza para entrenar** el detector del CDSS; sirve como conjunto piloto o de validación. Las 16 imágenes sin anotar son todas de escoliosis o del código «S»: el faltante no es aleatorio.
+**Veredicto:** anotaciones de buena calidad y anatómicamente coherentes, pero con 33 imágenes completas el dataset **no alcanza para entrenar** el detector del CDSS; sirve como conjunto piloto o de validación. Las 16 imágenes sin anotar son todas de escoliosis o del código «S»: el faltante no es aleatorio. Con los momentos de imagen, los contornos ya permiten medir alineación: el Cobb aproximado separa las columnas escolióticas de las normales, un primer paso hacia el criterio de alineación del SINS.
 
 ---
 
@@ -168,7 +171,7 @@ Cada notebook incluye su propia declaración y su guía de instrucciones (*human
 - **"Claude Sonnet 4.5"** para "asistir en la redacción de celdas Markdown y justificaciones metodológicas".
 - **"ChatGPT 4.5"** para "sugerir estructuras de esquemas SQLite en la primera versión del proyecto final".
 - **"GitHub Copilot"** para "autocompletar parsing de anotaciones YOLO y gráficos con Plotly/Streamlit".
-- **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas, tablero y presentación de la defensa), aplicar las correcciones del TP2 y desarrollar el TP4".
+- **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas, tablero y presentación de la defensa), implementar los momentos de OpenCV recomendados por el docente, aplicar las correcciones del TP2 y desarrollar el TP4".
 
 Las decisiones metodológicas fueron definidas y validadas por el autor.
 
