@@ -126,7 +126,7 @@
         \item \textbf{Demostración del tablero}
         \item Proceso de ETL
         \item Datos faltantes y anomalías
-        \item \textbf{Descriptores de forma con OpenCV}
+        \item \textbf{Descriptores de forma con OpenCV} y análisis exploratorio
         \item Modelo entidad-relación transaccional
         \item Diseño del almacén de datos
         \item Resultados y veredicto
@@ -572,6 +572,34 @@
       \small
       \textbf{Listesis:} L4–L5 es el nivel más desplazado, pero \textbf{no significativo} frente al resto (Wilcoxon, $n = 8$, $p = 0{,}15$): tendencia.\\[0.4ex]
       {\color{itba}\textbf{Para el CDSS:} los contornos ya miden alineación.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Análisis exploratorio (1): ¿qué resume la forma?}{ACP de 12 descriptores estandarizados · 169 vértebras de Lumbar Spine}
+  \centering\includegraphics[width=\linewidth]{fig/eda_acp.pdf}\\[0.3ex]
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \small
+      \textbf{4 componentes} explican el 80\,\%: CP1 es el \textbf{alargamiento} y CP2 el \textbf{relleno frente a la inclinación}.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \small
+      Por vértebra los puntos \textbf{se mezclan}: el nivel lo da la \textbf{posición} (P3), no la forma. Por diagnóstico, la \textcolor{alerta}{\textbf{espondilolistesis}} se separa sobre la CP1.
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Análisis exploratorio (2): redundancia y perfiles}{Correlación de Spearman y distancia entre vectores de medias, como en el TP3}
+  \centering\includegraphics[height=4.75cm]{fig/eda_perfiles.pdf}\\[0.1ex]
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \footnotesize
+      Excentricidad, circularidad, Hu1 y Hu2 tienen $|\rho| = 1$: miden lo mismo, \textbf{alcanza con una}.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \footnotesize
+      La \textbf{listesis} es el perfil más lejano a la columna normal (3,84): vértebras más redondeadas, por la \textbf{vista de perfil}. El código «S» queda cerca de la escoliosis (1,73).
     \end{column}
   \end{columns}
 \end{frame}

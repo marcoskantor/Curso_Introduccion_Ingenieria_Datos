@@ -48,7 +48,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 |---|---|
 | Entregable técnico (Colab reproducible) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
-| Presentación de la defensa (PDF, 41 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
+| Presentación de la defensa (PDF, 43 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
 | Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
 
 ## 🧬 Datos
@@ -78,15 +78,93 @@ Detalle de la fuente principal:
 
 ## 🛠️ Pipeline
 
+```mermaid
+flowchart LR
+    A1[("Lumbar Spine<br/>zip YOLOv8")] --> E["Extracción<br/>SHA-256"]
+    A2[("NHANES<br/>anotaciones COCO")] --> E
+    E --> T["Transformación<br/>parsing + tipado"]
+    T --> Q["Calidad<br/>faltantes · duplicados<br/>atípicos · orden · orientación"]
+    Q --> O["Descriptores<br/>OpenCV"]
+    O --> X["Análisis<br/>exploratorio"]
+    X --> DB[("spine_oltp.db<br/>3FN")]
+    DB --> DW[("spine_dw.db<br/>copo de nieve")]
+    DW --> S["Tablero<br/>Streamlit"]
+```
+
 | Etapa | Qué se hace | Artefacto |
 |---|---|---|
 | Extracción | Dos fuentes por URL pública, verificación SHA-256, idempotente | 2 zips crudos |
 | Transformación | Inventario por imagen, metadatos clínicos por expresiones regulares, parsing de polígonos (fórmula de Gauss), carga optimizada (`usecols` + tipado) | staging CSV |
 | Calidad | Faltantes en tres niveles, orientación de cada radiografía (vertical / girada 90° / invertida), duplicados (imagen, vértebra), inválidos geométricos, atípicos (Shapiro-Wilk → Tukey 2·IQR, Mahalanobis robusta) sobre variables normalizadas por imagen, control del orden craneocaudal L1→L5 | marcas de calidad |
 | Descriptores OpenCV | Momentos de cada contorno (`cv2.moments`): área, centroide, **inclinación** por momentos centrales, excentricidad, circularidad, solidez, momentos de Hu; formato de píxel (formato, canales, bits) e intensidad y contraste dentro de cada polígono; segmentos intervertebrales y Cobb aproximado | columnas nuevas |
+| Análisis exploratorio | Resoluciones y vértebras por imagen en las dos fuentes, matriz de correlación de Spearman de los descriptores, ACP (varianza explicada y biplot por vértebra y por diagnóstico), vectores de medias por diagnóstico y distancias entre perfiles, ejemplos de orientación en NHANES | figuras en el notebook |
 | Carga transaccional | SQLite en 3FN: `dataset`, `diagnostico`, `region`, `vertebra`, `imagen` (con formato de píxel y vista), `anotacion` (PK compuesta), `vertice` (PK compuesta) | `spine_oltp.db` |
 | Almacén | Copo de nieve con **dos tablas de hechos** (constelación): `fact_vertebra_anotada` (grano vértebra) y `fact_segmento` (grano segmento intervertebral), ambas con PK compuesta por sus dimensiones; `dim_imagen → dim_dataset / dim_diagnostico`, `dim_vertebra → dim_region`, `dim_segmento → dim_vertebra` | `spine_dw.db` |
 | Visualización | Tablero con veredicto ajustable, cobertura imagen × vértebra, balance, progresión anatómica, atípicos, representatividad y alineación (P5) | `app.py` |
+
+
+### Modelo transaccional (`spine_oltp.db`)
+
+```mermaid
+erDiagram
+    dataset    ||--o{ imagen    : contiene
+    diagnostico |o--o{ imagen   : clasifica
+    region     ||--o{ vertebra  : agrupa
+    imagen     ||--o{ anotacion : tiene
+    vertebra   ||--o{ anotacion : identifica
+    anotacion  ||--|{ vertice   : "se dibuja con"
+    imagen {
+        int imagen_id PK
+        int dataset_id FK
+        int diagnostico_id FK
+        text archivo
+        text vista
+        text orientacion
+    }
+    anotacion {
+        int imagen_id PK
+        int vertebra_id PK
+        text geometria
+        int es_atipico
+        int orden_coherente
+    }
+    vertice {
+        int imagen_id PK
+        int vertebra_id PK
+        int orden PK
+        real x_px
+        real y_px
+    }
+```
+
+### Almacén (`spine_dw.db`): constelación de hechos en copo de nieve
+
+```mermaid
+erDiagram
+    dim_dataset     ||--o{ dim_imagen : ""
+    dim_diagnostico ||--o{ dim_imagen : ""
+    dim_region      ||--o{ dim_vertebra : ""
+    dim_vertebra    ||--o{ dim_segmento : "superior / inferior"
+    dim_imagen      ||--o{ fact_vertebra_anotada : ""
+    dim_vertebra    ||--o{ fact_vertebra_anotada : ""
+    dim_imagen      ||--o{ fact_segmento : ""
+    dim_segmento    ||--o{ fact_segmento : ""
+    fact_vertebra_anotada {
+        int imagen_key PK
+        int vertebra_key PK
+        real area_norm
+        real inclinacion
+        real excentricidad
+        int es_atipico
+    }
+    fact_segmento {
+        int imagen_key PK
+        int segmento_key PK
+        real delta_inclinacion
+        real desplazamiento_rel
+        real separacion_rel
+    }
+```
 
 ## 📌 Resultados
 
@@ -98,8 +176,10 @@ Detalle de la fuente principal:
 | Anotaciones atípicas | 5 de 169 (3 %) |
 | Violaciones del orden L1→L5 | 0 |
 | Cobb aproximado (mediana), escoliosis vs. normales | 36° vs. 7° (Mann-Whitney, p < 0,001) |
+| Componentes principales para el 80 % de la varianza de forma | 4 de 12 |
+| Perfil más alejado de la columna normal | espondilolistesis (distancia 3,84) |
 
-**Veredicto:** Lumbar Spine sola **no alcanza** (33 imágenes completas). Sumando NHANES, los datos públicos **sí alcanzan para entrenar** el detector, con dos condiciones que dejó a la vista el control de calidad: **normalizar la orientación** (11 % de NHANES girada o invertida) y **sumar vistas de frente**, que hoy sólo aporta Lumbar Spine. Las 16 imágenes sin anotar son todas de escoliosis o del código «S»: el faltante no es aleatorio. Con los momentos de imagen, los contornos ya permiten medir alineación: el Cobb aproximado separa las columnas escolióticas de las normales, un primer paso hacia el criterio de alineación del SINS.
+**Veredicto:** Lumbar Spine sola **no alcanza** (33 imágenes completas). Sumando NHANES, los datos públicos **sí alcanzan para entrenar** el detector, con dos condiciones que dejó a la vista el control de calidad: **normalizar la orientación** (11 % de NHANES girada o invertida) y **sumar vistas de frente**, que hoy sólo aporta Lumbar Spine. Las 16 imágenes sin anotar son todas de escoliosis o del código «S»: el faltante no es aleatorio. El análisis exploratorio mostró que excentricidad, circularidad y Hu miden lo mismo (|ρ| = 1), que la forma no distingue el nivel vertebral (lo da la posición) y que la espondilolistesis se separa por ser radiografías de perfil: la vista es una variable de primer orden. Con los momentos de imagen, los contornos ya permiten medir alineación: el Cobb aproximado separa las columnas escolióticas de las normales, un primer paso hacia el criterio de alineación del SINS.
 
 ---
 
