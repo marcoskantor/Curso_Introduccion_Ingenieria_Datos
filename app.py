@@ -1,6 +1,7 @@
 import sqlite3
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -8,10 +9,36 @@ import streamlit as st
 DB = Path(__file__).with_name("spine_dw.db")
 ORDEN = ["L1", "L2", "L3", "L4", "L5"]
 FUENTE = {"lumbar-spine-vpxwf": "Lumbar Spine (polígonos)", "nhanes-l1-l5": "NHANES (cajas)"}
+CORTO = {"Normal": "Normal", "Código S (no documentado)": "Código «S»",
+         "Escoliosis idiopática (AIS)": "Escoliosis", "Espondilolistesis": "Listesis"}
 
 st.set_page_config(page_title="Vértebras lumbares — aptitud de los datos", layout="wide")
-AZUL, AZUL_CLARO, GRIS, ROJO = "#02568A", "#7FA9C8", "#C9CED6", "#C0392B"      # paleta institucional ITBA
-px.defaults.color_discrete_sequence = [AZUL, AZUL_CLARO, ROJO, GRIS, "#3E7CB1", "#9BB7D4"]
+AZUL, AZUL_CLARO, GRIS, GRIS_TXT, TINTA, ROJO = "#02568A", "#7FA9C8", "#C9CED6", "#8A949E", "#1F2933", "#C0392B"
+px.defaults.color_discrete_sequence = [AZUL, AZUL_CLARO, ROJO, GRIS]
+
+
+# Diseño (Storytelling with Data): el título es la conclusión, gris para el contexto y un color de acento
+# para el mensaje, leyenda horizontal arriba, sin escalas logarítmicas y ejes de conteo con ticks enteros.
+def paso(maximo, marcas=5):
+    """Paso 'redondo' (1, 2, 5, 10, 20…) para ejes de conteo; nunca menor que 1: no existen 2,5 imágenes."""
+    bruto = max(1.0, float(maximo) / marcas)
+    base = 10 ** int(np.floor(np.log10(bruto)))
+    return next(m * base for m in (1, 2, 5, 10) if m * base >= bruto)
+
+
+def es(v, dec=0):
+    """Número en formato argentino: punto de miles y coma decimal."""
+    return f"{v:,.{dec}f}".replace(",", "#").replace(".", ",").replace("#", ".")
+
+
+def estilo(fig, conteo=None, maximo=None):
+    fig.update_layout(template="simple_white", separators=",.", title_x=0, title_font=dict(size=16, color=TINTA),
+                      legend=dict(orientation="h", yanchor="bottom", y=1.0, x=0, title_text=""),
+                      margin=dict(t=90))
+    if conteo:
+        ejes = fig.update_xaxes if conteo == "x" else fig.update_yaxes
+        ejes(tick0=0, dtick=paso(maximo), tickformat=",d", rangemode="tozero")
+    return fig
 
 
 @st.cache_data
@@ -76,20 +103,20 @@ st.caption("Proyecto Final — Introducción a la Ingeniería de Datos · Marcos
 
 completas = int(img["completa"].sum())
 c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("Imágenes", f"{len(img):,}")
-c2.metric("Anotadas", f"{int(img['anotada'].sum()):,}", f"{100 * img['anotada'].mean():.0f} %" if len(img) else None)
-c3.metric("Completas L1–L5", f"{completas:,}")
-c4.metric("Anotaciones atípicas", f"{100 * h['es_atipico'].mean():.1f} %" if len(h) else "—")
-c5.metric("Giradas o invertidas", f"{int(img['orientacion'].isin(['girada 90°', 'invertida']).sum()):,}")
+c1.metric("Imágenes", f"{es(len(img))}")
+c2.metric("Anotadas", f"{es(int(img['anotada'].sum()))}", f"{es(100 * img['anotada'].mean())} %" if len(img) else None)
+c3.metric("Completas L1–L5", f"{es(completas)}")
+c4.metric("Anotaciones atípicas", f"{es(100 * h['es_atipico'].mean(), 1)} %" if len(h) else "—")
+c5.metric("Giradas o invertidas", f"{es(int(img['orientacion'].isin(['girada 90°', 'invertida']).sum()))}")
 
 if completas >= minimo:
-    st.success(f"**Apto para entrenar:** {completas:,} imágenes completas superan el mínimo supuesto de {minimo:,}.")
+    st.success(f"**Apto para entrenar:** {es(completas)} imágenes completas superan el mínimo supuesto de {es(minimo)}.")
 elif completas >= minimo / 4:
     st.warning(f"**Insuficiente para entrenar desde cero; útil como ajuste fino o validación:** "
-               f"{completas:,} imágenes completas frente a {minimo:,} necesarias.")
+               f"{es(completas)} imágenes completas frente a {es(minimo)} necesarias.")
 else:
-    st.error(f"**No alcanza para entrenar el detector.** Con {completas:,} imágenes completas "
-             f"({100 * completas / minimo:.0f} % del mínimo supuesto de {minimo:,}) sirve como **conjunto piloto o de validación**; "
+    st.error(f"**No alcanza para entrenar el detector.** Con {es(completas)} imágenes completas "
+             f"({100 * completas / minimo:.0f} % del mínimo supuesto de {es(minimo)}) sirve como **conjunto piloto o de validación**; "
              f"hay que sumar datos.")
 por_fuente = (img.groupby("fuente").agg(imagenes=("archivo", "size"), anotadas=("anotada", "sum"),
                                          completas=("completa", "sum")).reset_index())
@@ -101,19 +128,27 @@ st.divider()
 st.subheader("P1 · Cobertura y balance")
 col_a, col_b = st.columns(2)
 with col_a:
-    est = img.assign(estado=img["anotada"].map({0: "sin anotar"}).fillna(img["completa"].map({1: "completa L1–L5", 0: "incompleta"})))
-    rep = est.groupby(["fuente", "estado"]).size().reset_index(name="imagenes")
-    fig = px.bar(rep, y="fuente", x="imagenes", color="estado", orientation="h", log_x=True,
-                 category_orders={"estado": ["completa L1–L5", "incompleta", "sin anotar"]},
-                 color_discrete_map={"completa L1–L5": AZUL, "incompleta": AZUL_CLARO, "sin anotar": GRIS},
-                 title="Imágenes por fuente y estado (escala log)", labels={"fuente": "", "estado": ""})
-    st.plotly_chart(fig, width="stretch")
+    por_f = img.groupby("fuente", as_index=False)["completa"].sum()
+    por_f["alcanza"] = np.where(por_f["completa"] >= minimo, "supera el mínimo", "no alcanza el mínimo")
+    fig = px.bar(por_f, y="fuente", x="completa", orientation="h", color="alcanza", text="completa",
+                 color_discrete_map={"supera el mínimo": AZUL, "no alcanza el mínimo": ROJO},
+                 title=f"Imágenes completas por fuente frente al mínimo de {es(minimo)}",
+                 labels={"fuente": "", "completa": "imágenes con L1–L5 completas"})
+    fig.add_vline(x=minimo, line_dash="dash", line_color=TINTA, annotation_text=f"mínimo: {es(minimo)}")
+    fig.update_traces(texttemplate="%{x:,d}", textposition="outside", cliponaxis=False)
+    st.plotly_chart(estilo(fig, "x", max(por_f["completa"].max(), minimo)), width="stretch")
 with col_b:
-    balance = h.groupby(["fuente", "vertebra"]).size().rename("anotaciones").reset_index()
-    fig = px.bar(balance, x="vertebra", y="anotaciones", color="fuente", barmode="group", log_y=True,
-                 category_orders={"vertebra": ORDEN}, title="Anotaciones por vértebra (escala log)",
-                 color_discrete_sequence=[AZUL, AZUL_CLARO], labels={"fuente": ""})
-    st.plotly_chart(fig, width="stretch")
+    # % de las imágenes anotadas de cada fuente que tienen cada vértebra: compara fuentes de tamaño muy distinto
+    # en escala lineal (las cantidades absolutas difieren en dos órdenes de magnitud)
+    balance = h.groupby(["fuente", "vertebra"])["archivo"].nunique().rename("imagenes").reset_index()
+    balance["pct"] = 100 * balance["imagenes"] / balance["fuente"].map(img[img["anotada"] == 1].groupby("fuente").size())
+    fig = px.bar(balance, x="vertebra", y="pct", color="fuente", barmode="group",
+                 category_orders={"vertebra": ORDEN}, color_discrete_sequence=[AZUL, AZUL_CLARO],
+                 title="Las cinco clases están balanceadas en las dos fuentes",
+                 labels={"pct": "% de imágenes anotadas que tienen la vértebra", "vertebra": ""},
+                 hover_data={"imagenes": ":,d"})
+    fig.update_yaxes(range=[0, 105], ticksuffix=" %")
+    st.plotly_chart(estilo(fig), width="stretch")
 
 if "Lumbar Spine (polígonos)" in fuente_sel:
     with st.expander("Grilla imagen × vértebra de Lumbar Spine (gris = falta, azul = anotada, rojo = atípica)"):
@@ -133,23 +168,30 @@ st.subheader("P3 · Coherencia anatómica y orientación")
 col_a, col_b = st.columns(2)
 with col_a:
     ori = img[img["anotada"] == 1].groupby(["fuente", "orientacion"]).size().reset_index(name="imagenes")
-    fig = px.bar(ori, x="orientacion", y="imagenes", color="fuente", barmode="group", text="imagenes",
+    ori["pct"] = 100 * ori["imagenes"] / ori.groupby("fuente")["imagenes"].transform("sum")
+    malas = int(ori.loc[ori["orientacion"] != "vertical", "imagenes"].sum())
+    fig = px.bar(ori, y="orientacion", x="imagenes", facet_col="fuente", orientation="h", text="imagenes",
+                 color=np.where(ori["orientacion"] == "vertical", "derecha", "a enderezar"),
+                 color_discrete_map={"derecha": GRIS, "a enderezar": ROJO},
                  category_orders={"orientacion": ["vertical", "girada 90°", "invertida"]},
-                 color_discrete_sequence=[AZUL, AZUL_CLARO],
-                 title="Orientación de las radiografías", labels={"orientacion": "", "fuente": ""})
-    st.plotly_chart(fig, width="stretch")
+                 title=f"{es(malas)} radiografías ({es(100 * malas / max(1, ori['imagenes'].sum()))} %) llegan giradas o invertidas",
+                 labels={"orientacion": "", "imagenes": "radiografías", "color": ""}, custom_data=["pct"])
+    fig.update_traces(texttemplate="%{x:,d} (%{customdata[0]:.0f} %)", textposition="outside", cliponaxis=False)
+    fig.update_xaxes(matches=None, showticklabels=False)        # cada fuente con su escala; el valor va escrito
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+    st.plotly_chart(estilo(fig), width="stretch")
 with col_b:
     vert = h[h["orientacion"] == "vertical"]
     muestra = vert["archivo"].drop_duplicates().sample(min(200, vert["archivo"].nunique()), random_state=0)
     vs = vert[vert["archivo"].isin(muestra)].sort_values("orden_craneocaudal")
     fig = px.line(vs, x="vertebra", y="cy_rel", line_group="archivo",
                   color=vs["orden_coherente"].map({1: "orden correcto", 0: "rompe el orden"}),
-                  color_discrete_map={"orden correcto": AZUL_CLARO, "rompe el orden": ROJO},
+                  color_discrete_map={"orden correcto": GRIS, "rompe el orden": ROJO},
                   category_orders={"vertebra": ORDEN}, markers=True,
-                  title="Posición vertical por imagen (muestra de 200 verticales)",
-                  labels={"cy_rel": "centroide vertical / alto de la imagen", "color": ""})
-    fig.update_yaxes(autorange="reversed")
-    st.plotly_chart(fig, width="stretch")
+                  title="Las vértebras bajan de L1 a L5 (muestra de 200 radiografías derechas)",
+                  labels={"cy_rel": "altura en la imagen (0 = arriba, 1 = abajo)", "color": "", "vertebra": ""})
+    fig.update_yaxes(autorange="reversed", tickformat=".1f")
+    st.plotly_chart(estilo(fig), width="stretch")
 st.caption(f"Cajas o polígonos que rompen el orden L1→L5 a lo largo de la columna (errores de etiqueta): "
            f"{int((1 - h['orden_coherente']).sum())} en {h.loc[h['orden_coherente'] == 0, 'archivo'].nunique()} imágenes.")
 
@@ -159,10 +201,16 @@ if len(poly):
     var = st.radio("Variable", ["area_norm", "aspecto", "relleno"], horizontal=True,
                    format_func={"area_norm": "área relativa a sus vecinas", "aspecto": "relación de aspecto",
                                 "relleno": "relleno del polígono"}.get)
+    n_at = int(poly["es_atipico"].sum())
     fig = px.strip(poly, x="vertebra", y=var, color=poly["es_atipico"].map({0: "normal", 1: "atípica"}),
                    category_orders={"vertebra": ORDEN}, hover_data=["archivo", "motivo_atipico"],
-                   color_discrete_map={"normal": AZUL_CLARO, "atípica": ROJO}, labels={"color": ""})
-    st.plotly_chart(fig, width="stretch")
+                   color_discrete_map={"normal": AZUL_CLARO, "atípica": ROJO},
+                   title=f"Sólo {n_at} de {len(poly)} contornos son atípicos: se revisan a mano, no se borran",
+                   labels={"color": "", "vertebra": ""})
+    if var == "area_norm":
+        fig.add_hline(y=1, line_dash="dot", line_color=GRIS_TXT, annotation_text="mismo tamaño que sus vecinas")
+    fig.update_yaxes(tickformat=".1f")
+    st.plotly_chart(estilo(fig), width="stretch")
 atip = h[h["es_atipico"] == 1][["fuente", "archivo", "vertebra", "motivo_atipico"]]
 st.markdown(f"**{len(atip)} anotaciones marcadas para revisión manual**")
 st.dataframe(atip, width="stretch", hide_index=True)
@@ -171,17 +219,27 @@ st.dataframe(atip, width="stretch", hide_index=True)
 st.subheader("P4 · Representatividad")
 col_a, col_b = st.columns(2)
 with col_a:
-    rep = img.groupby(["diagnostico", "vista"]).size().reset_index(name="imagenes")
-    fig = px.bar(rep, y="diagnostico", x="imagenes", color="vista", orientation="h", log_x=True,
-                 color_discrete_map={"frente": AZUL, "perfil": AZUL_CLARO},
-                 title="Imágenes por diagnóstico y vista (escala log)", labels={"diagnostico": ""})
-    st.plotly_chart(fig, width="stretch")
+    # sólo imágenes con diagnóstico: NHANES («sin dato», 4.436) aplastaría la escala lineal
+    con_diag = img[img["diagnostico"] != "sin dato"]
+    est = con_diag.assign(estado=np.where(con_diag["anotada"] == 0, "sin anotar",
+                                          np.where(con_diag["completa"] == 1, "completa", "incompleta")),
+                          diag=con_diag["diagnostico"].map(CORTO))
+    rep = est.groupby(["diag", "estado"]).size().reset_index(name="imagenes")
+    fig = px.bar(rep, y="diag", x="imagenes", color="estado", orientation="h", text="imagenes",
+                 category_orders={"estado": ["completa", "incompleta", "sin anotar"], "diag": list(CORTO.values())},
+                 color_discrete_map={"completa": AZUL, "incompleta": AZUL_CLARO, "sin anotar": ROJO},
+                 title="Las imágenes sin anotar son de escoliosis y del código «S»",
+                 labels={"diag": "", "imagenes": "imágenes de Lumbar Spine"})
+    st.plotly_chart(estilo(fig, "x", est.groupby("diag").size().max() if len(est) else 1), width="stretch")
 with col_b:
     con_dato = img[img["grupo_edad"] != "sin dato"]
-    fig = px.histogram(con_dato, x="grupo_edad", color="sexo", barmode="group",
-                       title="Edad y sexo (sólo Lumbar Spine: NHANES no trae metadatos)",
-                       category_orders={"grupo_edad": ["<18", "18-39", "40-64", "65+"]})
-    st.plotly_chart(fig, width="stretch")
+    edad = con_dato.groupby(["grupo_edad", "sexo"]).size().reset_index(name="imagenes")
+    fig = px.bar(edad, x="grupo_edad", y="imagenes", color="sexo", barmode="group", text="imagenes",
+                 color_discrete_map={"F": AZUL, "M": AZUL_CLARO, "sin dato": GRIS},
+                 title="La mayoría son mujeres menores de 18 años (NHANES no trae edad ni sexo)",
+                 category_orders={"grupo_edad": ["<18", "18-39", "40-64", "65+"], "sexo": ["F", "M", "sin dato"]},
+                 labels={"grupo_edad": "grupo de edad", "imagenes": "imágenes"})
+    st.plotly_chart(estilo(fig, "y", edad["imagenes"].max() if len(edad) else 1), width="stretch")
 
 # ------------------------------------------------------------------ P5 alineación
 st.subheader("P5 · Alineación medida con momentos de imagen (OpenCV, polígonos de Lumbar Spine)")
@@ -195,16 +253,32 @@ seg = segmentos[segmentos["archivo"].isin(img["archivo"])].assign(desplazamiento
 if len(cobb):
     col_a, col_b = st.columns(2)
     with col_a:
-        fig = px.box(cobb, x="diagnostico", y="cobb_aprox", color="vista", points="all",
-                     color_discrete_map={"frente": AZUL, "perfil": ROJO},
-                     title="Cobb aproximado por imagen", labels={"cobb_aprox": "grados", "diagnostico": ""})
-        st.plotly_chart(fig, width="stretch")
+        mediana = cobb.groupby("diagnostico")["cobb_aprox"].median()
+        titulo = "Cobb aproximado por radiografía"
+        if {"Escoliosis idiopática (AIS)", "Normal"} <= set(mediana.index):
+            titulo = (f"La escoliosis tiene {mediana['Escoliosis idiopática (AIS)']:.0f}° de Cobb "
+                      f"frente a {mediana['Normal']:.0f}° de las normales")
+        cobb["diag"] = cobb["diagnostico"].map(CORTO)
+        fig = px.box(cobb, x="diag", y="cobb_aprox", color="diag", points="all",
+                     category_orders={"diag": list(CORTO.values())},
+                     color_discrete_map={"Normal": GRIS_TXT, "Código «S»": GRIS_TXT, "Escoliosis": AZUL, "Listesis": ROJO},
+                     title=titulo, labels={"cobb_aprox": "Cobb aproximado (°)", "diag": ""})
+        fig.update_layout(showlegend=False)
+        if "Listesis" in set(cobb["diag"]):
+            fig.add_annotation(x="Listesis", y=cobb["cobb_aprox"].max(), text="de perfil (lordosis)", showarrow=False,
+                               yshift=18, font=dict(color=GRIS_TXT, size=11))
+        st.plotly_chart(estilo(fig), width="stretch")
     with col_b:
         med = seg.groupby(["diagnostico", "segmento"], as_index=False)["desplazamiento"].median()
-        fig = px.line(med, x="segmento", y="desplazamiento", color="diagnostico", markers=True,
-                      title="Desplazamiento entre vértebras vecinas (mediana)",
-                      labels={"desplazamiento": "|desplazamiento| / ancho de la vértebra", "segmento": ""})
-        st.plotly_chart(fig, width="stretch")
+        med["diag"] = med["diagnostico"].map(CORTO)
+        fig = px.line(med, x="segmento", y="desplazamiento", color="diag", markers=True,
+                      color_discrete_map={"Normal": GRIS, "Código «S»": GRIS, "Escoliosis": GRIS, "Listesis": ROJO},
+                      title="En la listesis, L4–L5 es el segmento más desplazado (tendencia, n = 8)",
+                      labels={"desplazamiento": "|desplazamiento| / ancho de la vértebra", "segmento": "", "diag": ""})
+        fig.update_traces(line_width=2)
+        fig.update_traces(selector=dict(name="Listesis"), line_width=4)
+        fig.update_yaxes(tickformat=".2f")
+        st.plotly_chart(estilo(fig), width="stretch")
     resumen_p5 = cobb.groupby(["vista", "diagnostico"])["cobb_aprox"].median().round(1).rename("Cobb aprox. (mediana, °)")
     st.dataframe(resumen_p5.reset_index(), width="stretch", hide_index=True)
 else:
