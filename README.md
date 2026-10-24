@@ -48,7 +48,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 |---|---|
 | Entregable técnico (Colab reproducible) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
-| Presentación de la defensa (PDF, 43 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX) |
+| Presentación de la defensa (PDF, 45 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
 | Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
 
 ## 🧬 Datos
