@@ -1,3 +1,13 @@
+"""Tablero Streamlit del Proyecto Final: ¿alcanzan los datos públicos para entrenar el detector de vértebras?
+
+Lee SOLO del almacén `spine_dw.db` (copo de nieve con dos hechos):
+  - fact_vertebra_anotada: grano = una vértebra anotada en una imagen (medidas atómicas de forma y calidad).
+  - fact_segmento:         grano = un segmento intervertebral (par L(i)-L(i+1)) en una imagen.
+  - dimensiones: dim_imagen (-> dim_dataset, dim_diagnostico), dim_vertebra, dim_segmento.
+Todo promedio, conteo o Cobb aproximado se calcula acá con pandas (a partir de medidas atómicas), nunca se guarda.
+Cada sección responde una pregunta: P1 cobertura y balance, P2 calidad geométrica, P3 coherencia anatómica,
+P4 representatividad, P5 alineación. Los filtros de la barra lateral recalculan todo, incluido el veredicto.
+"""
 import sqlite3
 from pathlib import Path
 
@@ -43,6 +53,13 @@ def estilo(fig, conteo=None, maximo=None):
 
 @st.cache_data
 def cargar():
+    """Carga del almacén tres tablas planas para el tablero (una consulta por grano).
+
+    hechos    : una fila por vértebra anotada (fact_vertebra_anotada + dimensiones imagen, vértebra, dataset, diagnóstico).
+    imagenes  : una fila por radiografía (dim_imagen), incluidas las que no tienen anotaciones (P1 las necesita).
+    segmentos : una fila por segmento intervertebral en una imagen (fact_segmento), sólo Lumbar Spine (dataset_key = 1)
+                porque las cajas de NHANES no permiten medir inclinación ni desplazamiento.
+    """
     con = sqlite3.connect(DB)
     hechos = pd.read_sql("""
         SELECT i.archivo, i.split, i.sexo, i.grupo_edad, i.vista, i.orientacion, d.nombre AS diagnostico,
@@ -88,6 +105,7 @@ st.sidebar.header("Supuesto del veredicto")
 minimo = st.sidebar.slider("Imágenes completas (L1–L5) necesarias para entrenar", 50, 5000, 200, step=50,
                            help="Orden de magnitud habitual para entrenar un detector de 5 clases desde un modelo preentrenado.")
 
+# Filtros: `img` = radiografías elegidas; `h` = sus anotaciones; `poly` = sólo polígonos (Lumbar Spine).
 img = imagenes[imagenes["fuente"].isin(fuente_sel) & imagenes["diagnostico"].isin(diag_sel)
                & imagenes["sexo"].isin(sexo_sel or imagenes["sexo"].unique())]
 h = hechos[hechos["archivo"].isin(img["archivo"])]
@@ -101,6 +119,7 @@ st.caption("Proyecto Final — Introducción a la Ingeniería de Datos · Marcos
            "Datos: Lumbar Spine (rp-team) y NHANES L1–L5 (main-kybbe), Roboflow Universe, CC BY 4.0 · "
            "Fuente del tablero: almacén `spine_dw.db`")
 
+# Indicadores: `completa` es 1 si la imagen tiene las 5 vértebras (se calculó en dim_imagen); acá se suma.
 completas = int(img["completa"].sum())
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Imágenes", f"{es(len(img))}")
@@ -109,6 +128,7 @@ c3.metric("Completas L1–L5", f"{es(completas)}")
 c4.metric("Anotaciones atípicas", f"{es(100 * h['es_atipico'].mean(), 1)} %" if len(h) else "—")
 c5.metric("Giradas o invertidas", f"{es(int(img['orientacion'].isin(['girada 90°', 'invertida']).sum()))}")
 
+# Veredicto: compara las imágenes completas con el mínimo supuesto (ajustable); verde / amarillo / rojo.
 if completas >= minimo:
     st.success(f"**Apto para entrenar:** {es(completas)} imágenes completas superan el mínimo supuesto de {es(minimo)}.")
 elif completas >= minimo / 4:
@@ -182,6 +202,8 @@ with col_a:
     st.plotly_chart(estilo(fig), width="stretch")
 with col_b:
     vert = h[h["orientacion"] == "vertical"]
+    # ÚNICO muestreo del tablero: 200 imágenes sólo para que el gráfico de líneas sea legible; los conteos y
+    # métricas de arriba y abajo usan todas las filas.
     muestra = vert["archivo"].drop_duplicates().sample(min(200, vert["archivo"].nunique()), random_state=0)
     vs = vert[vert["archivo"].isin(muestra)].sort_values("orden_craneocaudal")
     fig = px.line(vs, x="vertebra", y="cy_rel", line_group="archivo",
@@ -246,6 +268,8 @@ st.subheader("P5 · Alineación medida con momentos de imagen (OpenCV, polígono
 st.caption("La inclinación de cada vértebra es el ángulo del eje principal de su contorno, "
            "θ = ½·atan2(2μ11, μ20 − μ02). En radiografías de frente el rango L1–L5 aproxima el ángulo de Cobb (escoliosis); "
            "en las de perfil (espondilolistesis) refleja la lordosis. Las cajas de NHANES no tienen inclinación.")
+# Cobb aproximado por imagen = máximo - mínimo de la inclinación de L1-L5 (>= 4 vértebras). Se calcula al
+# consultar, a partir de la inclinación atómica por vértebra; no se guarda en el almacén.
 cobb = (poly.dropna(subset=["inclinacion"]).groupby(["archivo", "diagnostico", "vista"])
         .agg(cobb_aprox=("inclinacion", lambda s: s.max() - s.min()), vertebras=("inclinacion", "size"))
         .query("vertebras >= 4").reset_index())
