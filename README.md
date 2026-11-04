@@ -48,7 +48,8 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 |---|---|
 | Entregable técnico (Colab reproducible) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
-| Presentación de la defensa (PDF, 45 diapositivas) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
+| Presentación de la defensa (PDF, **19 diapositivas para 20 minutos** + 25 de anexo para el coloquio) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
+| Guion de la defensa (cronograma de 20 minutos y preguntas del coloquio) | [`Guion_defensa.pdf`](./Guion_defensa.pdf) — fuente en [`defensa/guion.tex`](./defensa/guion.tex) |
 | Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
 
 ## 🧬 Datos
@@ -166,6 +167,8 @@ erDiagram
     }
 ```
 
+**Grano y medidas del almacén.** `fact_vertebra_anotada` = una vértebra anotada en una imagen; `fact_segmento` = un segmento intervertebral en una imagen. Las medidas son **atómicas** (área normalizada, inclinación, marcas 0/1, ángulo y desplazamiento segmentarios): no se guardan promedios. `AVG` se calcula al consultar y, para cantidades (anotaciones atípicas, imágenes completas), se usan `SUM`/`COUNT`. No hay dimensión tiempo: las radiografías no tienen fecha. El ACP del análisis exploratorio usa **todas** las vértebras con polígono (169); el único *sample* (200 imágenes) es sólo para graficar en el tablero.
+
 ## 📌 Resultados
 
 | Indicador | Valor |
@@ -266,6 +269,8 @@ Cada notebook incluye su propia declaración y su guía de instrucciones (*human
 - **"ChatGPT 4.5"** para "sugerir estructuras de esquemas SQLite en la primera versión del proyecto final".
 - **"GitHub Copilot"** para "autocompletar parsing de anotaciones YOLO y gráficos con Plotly/Streamlit".
 - **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas, tablero y presentación de la defensa), implementar los momentos de OpenCV recomendados por el docente, integrar NHANES como segunda fuente, aplicar las correcciones del TP2 y desarrollar el TP4".
+
+Los pedidos a la IA se formularon como **prompts guiados**: contexto (qué es cada entidad y cómo se relacionan), grano de cada tabla de hechos y pedido concreto (por ejemplo, «Creá las consultas para este diseño de almacén de datos»), en lugar de pedidos vagos. Los ejemplos están en el TP3 y en el anexo B19 de la defensa.
 
 Las decisiones metodológicas fueron definidas y validadas por el autor.
 
