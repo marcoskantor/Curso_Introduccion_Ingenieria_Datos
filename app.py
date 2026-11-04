@@ -20,6 +20,10 @@ import streamlit as st
 #   DB     : ruta del almacén SQLite (spine_dw.db, junto a este archivo); el tablero NO lee la base transaccional.
 #   ORDEN  : las cinco vértebras, de craneal a caudal, para ordenar ejes y leyendas.
 #   FUENTE : traduce el nombre de dim_dataset al rótulo que se muestra (Lumbar Spine = polígonos, NHANES = cajas).
+# Constantes del tablero:
+#   DB     : ruta del almacén SQLite (spine_dw.db, junto a este archivo); el tablero NO lee la base transaccional.
+#   ORDEN  : las cinco vértebras, de craneal a caudal, para ordenar ejes y leyendas.
+#   FUENTE : traduce el nombre de dim_dataset al rótulo que se muestra (Lumbar Spine = polígonos, NHANES = cajas).
 DB = Path(__file__).with_name("spine_dw.db")
 ORDEN = ["L1", "L2", "L3", "L4", "L5"]
 FUENTE = {"lumbar-spine-vpxwf": "Lumbar Spine (polígonos)", "nhanes-l1-l5": "NHANES (cajas)"}
@@ -97,6 +101,9 @@ def cargar():
 # Las tres tablas planas que usa todo el tablero (se explican en `cargar`):
 #   hechos    -> una fila por vértebra anotada (P2, P3, P5);  imagenes -> una fila por radiografía (P1, P4);
 #   segmentos -> una fila por segmento intervertebral en una imagen (desplazamiento, P5).
+# Las tres tablas planas que usa todo el tablero (se explican en `cargar`):
+#   hechos    -> una fila por vértebra anotada (P2, P3, P5);  imagenes -> una fila por radiografía (P1, P4);
+#   segmentos -> una fila por segmento intervertebral en una imagen (desplazamiento, P5).
 hechos, imagenes, segmentos = cargar()
 
 # ------------------------------------------------------------------ barra lateral
@@ -127,6 +134,10 @@ st.caption("Proyecto Final — Introducción a la Ingeniería de Datos · Marcos
            "Fuente del tablero: almacén `spine_dw.db`")
 
 # Indicadores: `completa` es 1 si la imagen tiene las 5 vértebras (se calculó en dim_imagen); acá se suma.
+# Variables del bloque de indicadores y veredicto:
+#   completas : cantidad de imágenes filtradas con las 5 vértebras anotadas (suma de dim_imagen.completa).
+#   minimo    : supuesto ajustable (barra lateral) de cuántas imágenes completas hacen falta para entrenar.
+#   por_fuente: tabla resumen (imágenes, anotadas, completas) por fuente de datos.
 # Variables del bloque de indicadores y veredicto:
 #   completas : cantidad de imágenes filtradas con las 5 vértebras anotadas (suma de dim_imagen.completa).
 #   minimo    : supuesto ajustable (barra lateral) de cuántas imágenes completas hacen falta para entrenar.
@@ -281,6 +292,8 @@ st.caption("La inclinación de cada vértebra es el ángulo del eje principal de
            "en las de perfil (espondilolistesis) refleja la lordosis. Las cajas de NHANES no tienen inclinación.")
 # Cobb aproximado por imagen = máximo - mínimo de la inclinación de L1-L5 (>= 4 vértebras). Se calcula al
 # consultar, a partir de la inclinación atómica por vértebra; no se guarda en el almacén.
+# cobb : una fila por radiografía con cobb_aprox (grados) y vertebras (cuántas vértebras con inclinación tiene);
+#        sólo se usan imágenes con >= 4. seg: segmentos de las imágenes filtradas, con |desplazamiento|.
 # cobb : una fila por radiografía con cobb_aprox (grados) y vertebras (cuántas vértebras con inclinación tiene);
 #        sólo se usan imágenes con >= 4. seg: segmentos de las imágenes filtradas, con |desplazamiento|.
 cobb = (poly.dropna(subset=["inclinacion"]).groupby(["archivo", "diagnostico", "vista"])
