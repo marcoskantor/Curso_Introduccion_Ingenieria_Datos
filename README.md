@@ -209,6 +209,8 @@ Diseño de una base transaccional y un almacén de datos sobre GDELT 2.0 / CAMEO
 
 Caracterización del ecosistema global de noticias con GDELT 2.0: extensión del almacén con actores, tipo de interacción, región, tono y escala Goldstein; vectores de medias por país, distancias entre países, matrices de correlación y Análisis de Componentes Principales con interpretación de las cargas.
 
+Correcciones de la devolución docente: el almacén guarda **sumas y conteos** (no promedios) y la dimensión tiempo es **por día** (semana ISO y mes derivados; 31 días); el prompt a la IA es **guiado** (contexto, grano, medidas y consultas esperadas); la **muestra del 10 %** del ACP se justifica con números (2,96 M de eventos, 0,90 GB por copia de la matriz) y se prueba su estabilidad contra un 5 % (varianza explicada y loadings prácticamente idénticos); el top 10 de países sale del almacén (población completa) y la exclusión de las dummies de país se justifica porque son la variable de agrupamiento.
+
 📓 [`TP3.ipynb`](./TP3.ipynb)
 
 ---
