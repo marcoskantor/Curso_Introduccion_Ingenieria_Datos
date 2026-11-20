@@ -222,7 +222,7 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
 | Etapa | Qué se hace |
 |---|---|
 | Ingesta | Archivos de 15 minutos desde `masterfilelist.txt`, verificación MD5, One Big Table desnormalizada con los libros de códigos CAMEO/FIPS, guardada en Parquet |
-| Nulos y ceros | Faltantes estructurales (evento sin Actor2) vs. reales, auditoría de consistencia lógica del codebook, imputación justificada por variable |
+| Nulos y ceros | Faltantes estructurales (evento sin Actor2) vs. reales, auditoría de consistencia lógica del codebook, imputación justificada por variable; `AvgTone = 0` exacto identificado como pico anómalo (tono no calculado) y tratado como faltante, a diferencia de `GoldsteinScale = 0`, que es un valor CAMEO válido |
 | Cardinalidad y dummies | Categorías con menos del 5 % → `OTHER`; variables indicadoras con categoría de referencia; control de varianza casi nula |
 | Diseño de variables | Noticias retrospectivas (fechas "hace un año" inferidas por GDELT) separadas como hallazgo de calidad; conteos en percentiles; ubicación sólo como país; variantes probadas y documentadas |
 | ACP | Escalado robusto (`RobustScaler`: mediana y RIC) y selección del número mínimo de componentes (varianza acumulada, Kaiser generalizado, codo) |
@@ -262,16 +262,13 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
 
 # 🤖 Declaración de uso de IA
 
-Cada notebook incluye su propia declaración y su guía de instrucciones (*human-in-the-loop*). Resumen:
+**Proyecto final**
 
-- **"DeepSeek"** para "comprender el formato de GDELT 2.0 y organizar el flujo de ingesta del TP1".
-- **"Gemini 2.5 Pro"** para "asesorar la reimplementación del almacén de datos en el TP3".
-- **"Claude Sonnet 4.5"** para "asistir en la redacción de celdas Markdown y justificaciones metodológicas".
-- **"ChatGPT 4.5"** para "sugerir estructuras de esquemas SQLite en la primera versión del proyecto final".
-- **"GitHub Copilot"** para "autocompletar parsing de anotaciones YOLO y gráficos con Plotly/Streamlit".
-- **"Claude Opus 5.5"** para "reestructurar el proyecto final (extracción sin credenciales, control de calidad, modelos con claves compuestas, tablero y presentación de la defensa), implementar los momentos de OpenCV recomendados por el docente, integrar NHANES como segunda fuente, aplicar las correcciones del TP2 y desarrollar el TP4".
+- **"Claude Opus 5.5"** para "generar y revisar el código Python del cuaderno, redactar el borrador de las celdas Markdown y de la presentación de la defensa, y revisar los gráficos con criterios de *storytelling*".
 
-Los pedidos a la IA se formularon como **prompts guiados**: contexto (qué es cada entidad y cómo se relacionan), grano de cada tabla de hechos y pedido concreto (por ejemplo, «Creá las consultas para este diseño de almacén de datos»), en lugar de pedidos vagos. Los ejemplos están en el TP3 y en el anexo B19 de la defensa.
+Se usó a través de Claude Code (Anthropic); no se usó ninguna otra herramienta de IA. Cada trabajo práctico incluye su propia declaración y su guía de instrucciones (*human-in-the-loop*) dentro del notebook.
+
+Los pedidos a la IA se formularon como **prompts guiados**: contexto (qué es cada entidad y cómo se relacionan), grano de cada tabla de hechos y pedido concreto (por ejemplo, «Creá las consultas para este diseño de almacén de datos»), en lugar de pedidos vagos. Los ejemplos están en la sección «Instrucciones de la IA» del proyecto final y en el anexo B19 de la defensa.
 
 Las decisiones metodológicas fueron definidas y validadas por el autor.
 
