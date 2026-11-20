@@ -1,4 +1,4 @@
-# 🦴 Curso Introducción a la Ingeniería de Datos
+# Curso Introducción a la Ingeniería de Datos
 
 **Alumno:** Marcos Kantor  
 **Materia:** (20262Q) DIA.04 — Introducción a la Ingeniería de Datos — Comisión A  
@@ -14,23 +14,23 @@
 
 ---
 
-## 📖 Índice
+## Índice
 
 | Entrega | Tema | Archivos | Colab |
 |---|---|---|---|
-| [🎓 Proyecto Final](#-proyecto-final) | ¿Alcanzan los datos públicos de radiografías lumbares para entrenar el detector de vértebras de un CDSS de inestabilidad espinal? | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) · [`app.py`](./app.py) · [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
-| [📘 TP1](#-tp1--ingesta-y-exploración-de-gdelt-20) | Ingesta y exploración de GDELT 2.0 | [`TP1.ipynb`](./TP1.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP1.ipynb) |
-| [📊 TP2](#-tp2--modelado-oltp--olap) | Modelado transaccional y dimensional (GDELT / CAMEO) | [`TP2.md`](./TP2.md) · [`TP2.drawio`](./TP2.drawio) | — |
-| [📈 TP3](#-tp3--análisis-multivariante) | Análisis multivariante del ecosistema global de noticias | [`TP3.ipynb`](./TP3.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP3.ipynb) |
-| [🔎 TP4](#-tp4--detección-de-eventos-atípicos) | Detección de eventos atípicos en GDELT 2.0 | [`TP4.ipynb`](./TP4.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP4.ipynb) |
+| [Proyecto Final](#proyecto-final) | ¿Alcanzan los datos públicos de radiografías lumbares para entrenar el detector de vértebras de un CDSS de inestabilidad espinal? | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) · [`app.py`](./app.py) · [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/Proyecto_final.ipynb) |
+| [TP1](#tp1--ingesta-y-exploración-de-gdelt-20) | Ingesta y exploración de GDELT 2.0 | [`TP1.ipynb`](./TP1.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP1.ipynb) |
+| [TP2](#tp2--modelado-oltp--olap) | Modelado transaccional y dimensional (GDELT / CAMEO) | [`TP2.md`](./TP2.md) · [`TP2.drawio`](./TP2.drawio) | — |
+| [TP3](#tp3--análisis-multivariante) | Análisis multivariante del ecosistema global de noticias | [`TP3.ipynb`](./TP3.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP3.ipynb) |
+| [TP4](#tp4--detección-de-eventos-atípicos) | Detección de eventos atípicos en GDELT 2.0 | [`TP4.ipynb`](./TP4.ipynb) | [Abrir](https://colab.research.google.com/github/marcoskantor/Curso_Introduccion_Ingenieria_Datos/blob/main/TP4.ipynb) |
 
 Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → Ejecutar todo*, **sin credenciales ni archivos subidos a mano**.
 
 ---
 
-# 🎓 Proyecto Final
+# Proyecto Final
 
-## 🩺 Pregunta de investigación
+## Pregunta de investigación
 
 > **¿Los datos públicos de radiografías lumbares tienen la cobertura, el balance, la calidad geométrica y la coherencia anatómica necesarias para entrenar el detector de vértebras L1–L5 de un sistema de soporte a la decisión clínica (CDSS) orientado al SINS?**
 
@@ -42,7 +42,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | P4 | ¿Qué diagnósticos, sexos y edades cubre? | imágenes y completas por diagnóstico, sexo y grupo de edad |
 | P5 | ¿La inclinación y el desplazamiento medidos con **momentos de imagen (OpenCV)** distinguen las patologías? | inclinación por vértebra, Cobb aproximado, desplazamiento entre vértebras vecinas |
 
-## 📦 Entregables
+## Entregables
 
 | Componente | Archivo |
 |---|---|
@@ -51,7 +51,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | Presentación de la defensa (PDF, **19 diapositivas para 20 minutos** + 25 de anexo para el coloquio) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
 | Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
 
-## 🧬 Datos
+## Datos
 
 Dos fuentes públicas (CC BY 4.0), descargadas por URL pública de este repositorio y verificadas por **SHA-256** (Roboflow exige API key):
 
@@ -76,7 +76,7 @@ Detalle de la fuente principal:
 | Contenido | 50 radiografías (34 anotadas), 170 polígonos; diagnóstico, sexo y edad codificados en el nombre de archivo |
 | Acceso | Copia sin modificar en este repositorio, descargada por URL pública y verificada por **SHA-256** (Roboflow exige API key) |
 
-## 🛠️ Pipeline
+## Pipeline
 
 ```mermaid
 flowchart LR
@@ -168,7 +168,7 @@ erDiagram
 
 **Grano y medidas del almacén.** `fact_vertebra_anotada` = una vértebra anotada en una imagen; `fact_segmento` = un segmento intervertebral en una imagen. Las medidas son **atómicas** (área normalizada, inclinación, marcas 0/1, ángulo y desplazamiento segmentarios): no se guardan promedios. `AVG` se calcula al consultar y, para cantidades (anotaciones atípicas, imágenes completas), se usan `SUM`/`COUNT`. No hay dimensión tiempo: las radiografías no tienen fecha. El ACP del análisis exploratorio usa **todas** las vértebras con polígono (169); el único *sample* (200 imágenes) es sólo para graficar en el tablero.
 
-## 📌 Resultados
+## Resultados
 
 | Indicador | Valor |
 |---|---|
@@ -185,15 +185,15 @@ erDiagram
 
 ---
 
-# 📘 TP1 — Ingesta y exploración de GDELT 2.0
+# TP1 — Ingesta y exploración de GDELT 2.0
 
 Ingesta de un día de la tabla de eventos de GDELT 2.0 a partir de `masterfilelist.txt` (~96 archivos de 15 minutos), descarga en paralelo con `ThreadPoolExecutor`, lectura directa desde el ZIP y cálculo de métricas diarias, con gráficos de evolución temporal y un mapa por país.
 
-📓 [`TP1.ipynb`](./TP1.ipynb)
+Cuaderno: [`TP1.ipynb`](./TP1.ipynb)
 
 ---
 
-# 📊 TP2 — Modelado OLTP + OLAP
+# TP2 — Modelado OLTP + OLAP
 
 Diseño de una base transaccional y un almacén de datos sobre GDELT 2.0 / CAMEO para responder cuatro preguntas del negocio periodístico: rendimiento e impacto (P1), sentimiento por tipo de actor (P2), frecuencia y temporalidad (P3) y cobertura multi-temática (P4).
 
@@ -201,21 +201,21 @@ Diseño de una base transaccional y un almacén de datos sobre GDELT 2.0 / CAMEO
 - **Esquema estrella:** `Fact_Cobertura` con grano día × país × tipo de actor × tema y **PK compuesta por sus dimensiones** (`Dim_Tiempo`, `Dim_Geografia`, `Dim_Tipo_Actor`, `Dim_Tema`); puente `Puente_Evento_Tema` para P4. Métricas aditivas, cada una vinculada a una pregunta.
 - Incluye el script SQL y las consultas de P1–P4. La sección 0 del documento detalla las correcciones aplicadas a partir de la devolución del docente.
 
-📄 [`TP2.md`](./TP2.md) · 🧩 [`TP2.drawio`](./TP2.drawio)
+Archivos: [`TP2.md`](./TP2.md) · [`TP2.drawio`](./TP2.drawio)
 
 ---
 
-# 📈 TP3 — Análisis multivariante
+# TP3 — Análisis multivariante
 
 Caracterización del ecosistema global de noticias con GDELT 2.0: extensión del almacén con actores, tipo de interacción, región, tono y escala Goldstein; vectores de medias por país, distancias entre países, matrices de correlación y Análisis de Componentes Principales con interpretación de las cargas.
 
 Correcciones de la devolución docente: el almacén guarda **sumas y conteos** (no promedios) y la dimensión tiempo es **por día** (semana ISO y mes derivados; 31 días); el prompt a la IA es **guiado** (contexto, grano, medidas y consultas esperadas); la **muestra del 10 %** del ACP se justifica con números (2,96 M de eventos, 0,90 GB por copia de la matriz) y se prueba su estabilidad contra un 5 % (varianza explicada y loadings prácticamente idénticos); el top 10 de países sale del almacén (población completa) y la exclusión de las dummies de país se justifica porque son la variable de agrupamiento.
 
-📓 [`TP3.ipynb`](./TP3.ipynb)
+Cuaderno: [`TP3.ipynb`](./TP3.ipynb)
 
 ---
 
-# 🔎 TP4 — Detección de eventos atípicos
+# TP4 — Detección de eventos atípicos
 
 Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos 7 días.
 
@@ -228,22 +228,22 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
 | ACP | Escalado robusto (`RobustScaler`: mediana y RIC) y selección del número mínimo de componentes (varianza acumulada, Kaiser generalizado, codo) |
 | Atípicos | 10 métodos de 6 familias: distancia global (Z-score, Tukey), T² de Hotelling, SPE, K-Means, k-NN, LOF, DBSCAN, Isolation Forest y autoencoder; acuerdo por Jaccard y consenso por mayoría; tipología de cada atípico y tabla agrupada por noticia; exportación a Parquet/CSV |
 
-📓 [`TP4.ipynb`](./TP4.ipynb)
+Cuaderno: [`TP4.ipynb`](./TP4.ipynb)
 
 ---
 
-# 📂 Estructura del repositorio
+# Estructura del repositorio
 
     Curso_Introduccion_Ingenieria_Datos/
-    ├── Proyecto_final.ipynb          # 🎓 Entregable técnico del proyecto final
-    ├── app.py                        # 🖥️ Tablero Streamlit
-    ├── Proyecto_final_defensa.pdf    # 🎤 Presentación de la defensa
+    ├── Proyecto_final.ipynb          # Entregable técnico del proyecto final
+    ├── app.py                        # Tablero Streamlit
+    ├── Proyecto_final_defensa.pdf    # Presentación de la defensa
     ├── defensa/                      # Fuente LaTeX (Beamer) y figuras de la defensa
     ├── data/raw/                     # Datos crudos del proyecto final (CC BY 4.0): Lumbar Spine y NHANES
-    ├── TP1.ipynb                  # 📘 TP1
-    ├── TP2.md · TP2.drawio           # 📊 TP2
-    ├── TP3.ipynb                     # 📈 TP3
-    ├── TP4.ipynb                     # 🔎 TP4
+    ├── TP1.ipynb                  # TP1
+    ├── TP2.md · TP2.drawio           # TP2
+    ├── TP3.ipynb                     # TP3
+    ├── TP4.ipynb                     # TP4
     ├── notebooks/                    # Notebook de configuración del entorno
     ├── requirements.txt
     └── README.md
@@ -252,7 +252,7 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
 
 ---
 
-# 🚀 Cómo reproducir
+# Cómo reproducir
 
 1. Abrir el notebook en Colab con el botón **Abrir** de la tabla del índice.
 2. Ejecutar *Entorno de ejecución → Ejecutar todo*. No hace falta ninguna credencial.
@@ -260,7 +260,7 @@ Búsqueda de eventos "raros" en la tabla de eventos de GDELT 2.0 de los últimos
 
 ---
 
-# 🤖 Declaración de uso de IA
+# Declaración de uso de IA
 
 **Proyecto final**
 
