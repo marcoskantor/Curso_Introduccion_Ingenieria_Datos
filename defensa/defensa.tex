@@ -266,7 +266,7 @@
     \node[paso, below=1.2cm of t4, fill=itba, text=white] (c1) {SQLite transaccional (3FN)};
     \node[paso, right=0.45cm of c1, fill=itba, text=white] (c2) {SQLite almacén (copo de nieve)};
     \node[paso, right=0.45cm of c2, fill=itba, text=white] (c3) {Tablero Streamlit};
-    \node[paso, right=0.45cm of c3, draw=gris, fill=white] (c4) {Respuestas P1–P4 en SQL};
+    \node[paso, right=0.45cm of c3, draw=gris, fill=white] (c4) {Respuestas P1–P5 en SQL};
     \draw[flecha] (e1)--(e2); \draw[flecha] (e2)--(e3); \draw[flecha] (e3)--(e4); \draw[flecha] (e4)--(t1);
     \draw[flecha] (t1)--(t2); \draw[flecha] (t2)--(t3); \draw[flecha] (t3)--(t4); \draw[flecha] (t4)--(c1);
     \draw[flecha] (c1)--(c2); \draw[flecha] (c2)--(c3); \draw[flecha] (c2) to[bend right=25] (c4);
@@ -496,7 +496,7 @@
       \textbf{\color{itba}Declaración}\\[0.5ex]
       \scriptsize
       \begin{itemize}\setlength{\itemsep}{0.1ex}
-        \item «Claude Opus 5.5» para «generar y revisar el código Python del cuaderno (extracción, calidad, momentos de OpenCV, bases SQLite y tablero), redactar el borrador de las celdas Markdown y de esta presentación, y revisar los gráficos con criterios de storytelling».
+        \item «Claude Opus 5.5» para «generar y revisar el código Python del cuaderno y de los módulos de \texttt{src/} (extracción, calidad, momentos de OpenCV, bases SQLite y tablero), redactar el borrador de las celdas Markdown y de esta presentación, y revisar los gráficos con criterios de storytelling».
         \item Única herramienta de IA, usada a través de Claude Code (Anthropic).
         \item Prompts \textbf{guiados} (contexto, grano y pedido concreto) en lugar de pedidos vagos: ver la sección «Instrucciones de la IA» del cuaderno y el anexo B19.
       \end{itemize}
@@ -525,7 +525,7 @@
     \node[text=white, font=\Huge\bfseries] at ([yshift=1cm]current page.center) {¡Gracias!};
     \node[text=white, font=\large] at ([yshift=-0.1cm]current page.center) {Preguntas};
     \node[text=white, font=\footnotesize, align=center] at ([yshift=-1.6cm]current page.center)
-      {\texttt{github.com/marcoskantor/Curso\_Introduccion\_Ingenieria\_Datos}\\[0.3ex]Proyecto\_final.ipynb · app.py · data/raw/};
+      {\texttt{github.com/marcoskantor/Curso\_Introduccion\_Ingenieria\_Datos}\\[0.3ex]Proyecto\_final.ipynb · src/ · sql/ · app.py · data/raw/};
   \end{tikzpicture}
 \end{frame}}
 
@@ -568,11 +568,12 @@
     \begin{column}{0.46\textwidth}
       \begin{block}{Artefactos (repositorio GitHub del curso)}
         \footnotesize
-        \texttt{Proyecto\_final.ipynb} — Colab reproducible\\
-        \texttt{spine\_oltp.db} — SQLite transaccional\\
-        \texttt{spine\_dw.db} — SQLite almacén\\
+        \texttt{Proyecto\_final.ipynb} — Colab reproducible (14 páginas)\\
+        \texttt{src/}, \texttt{sql/} — funciones auxiliares y DDL\\
         \texttt{app.py} — tablero Streamlit\\
-        \texttt{data/raw/…zip} — dato crudo (CC BY 4.0)
+        \texttt{data/raw/…zip} — dato crudo (CC BY 4.0)\\
+        \texttt{notebooks/Proyecto\_final\_extendido.ipynb} — anexo\\
+        {\color{gris}\texttt{spine\_oltp.db} y \texttt{spine\_dw.db} se generan al ejecutar}
       \end{block}
       \vspace{1ex}
       {\footnotesize\color{gris}Se ejecuta con \emph{Entorno de ejecución → Ejecutar todo}, sin credenciales ni archivos subidos a mano.}
@@ -986,6 +987,7 @@ area = 0.5 * abs(np.dot(x, np.roll(y, -1))
       \end{itemize}
     \end{column}
   \end{columns}
+  \vfill{\scriptsize\color{gris}En el repositorio: \texttt{src/extraccion.py}: \texttt{parsear\_yolo}, \texttt{area\_poligono}.}
 \end{frame}
 
 \begin{frame}[fragile]{A2 · Tukey y Mahalanobis robusta}
@@ -1012,6 +1014,7 @@ atipico = d2 > chi2.ppf(0.999, 3)  # 16.27
       \end{itemize}
     \end{column}
   \end{columns}
+  \vfill{\scriptsize\color{gris}En el repositorio: cuaderno, sección 3.2 (código en línea); Shapiro-Wilk en \texttt{src/calidad.py}: \texttt{normalidad}.}
 \end{frame}
 
 \begin{frame}[fragile]{A3 · Orden craneocaudal y regla de duplicados}
@@ -1041,6 +1044,7 @@ roto = (prev.notna() & (anot.cy_rel <= prev)) | \
       \end{itemize}
     \end{column}
   \end{columns}
+  \vfill{\scriptsize\color{gris}En el repositorio: \texttt{src/calidad.py}: \texttt{deduplicar}; el control de orden, en el cuaderno, sección 3.2.}
 \end{frame}
 
 \begin{frame}[fragile]{A4 · Carga del almacén desde la base transaccional}
@@ -1071,6 +1075,7 @@ GROUP BY i.imagen_id;
       \end{itemize}
     \end{column}
   \end{columns}
+  \vfill{\scriptsize\color{gris}En el repositorio: \texttt{sql/dw\_dimensiones.sql} y \texttt{src/almacen.py}: \texttt{crear\_dw}.}
 \end{frame}
 
 \begin{frame}[fragile]{A5 · Momentos y Cobb aproximado}
@@ -1101,6 +1106,7 @@ GROUP BY imagen_key HAVING COUNT(*) >= 4;
       \end{itemize}
     \end{column}
   \end{columns}
+  \vfill{\scriptsize\color{gris}En el repositorio: \texttt{src/forma.py}: \texttt{descriptores}; la consulta del Cobb, en el cuaderno, sección 5.}
 \end{frame}
 
 
