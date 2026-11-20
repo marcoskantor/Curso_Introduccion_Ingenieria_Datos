@@ -46,7 +46,9 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 
 | Componente | Archivo |
 |---|---|
-| Entregable técnico (Colab reproducible) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb) |
+| Entregable técnico (Colab reproducible, 14 páginas impreso) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb): proceso completo, justificaciones y el código que demuestra cada requisito |
+| Código auxiliar y DDL | [`src/`](./src/) (extracción, calidad, momentos de OpenCV, carga de las bases, gráficos) y [`sql/`](./sql/) (esquemas transaccional y del almacén); el cuaderno los clona del repositorio |
+| Versión extendida (anexo) | [`notebooks/Proyecto_final_extendido.ipynb`](./notebooks/Proyecto_final_extendido.ipynb): mismo pipeline con el código en línea, análisis exploratorio completo y todas las figuras; genera las mismas bases |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
 | Presentación de la defensa (PDF, **19 diapositivas para 20 minutos** + 25 de anexo para el coloquio) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
 | Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
@@ -236,6 +238,8 @@ Cuaderno: [`TP4.ipynb`](./TP4.ipynb)
 
     Curso_Introduccion_Ingenieria_Datos/
     ├── Proyecto_final.ipynb          # Entregable técnico del proyecto final
+    ├── src/                          # Módulos del proyecto final (extracción, calidad, forma, almacén, gráficos)
+    ├── sql/                          # DDL de la base transaccional y del almacén
     ├── app.py                        # Tablero Streamlit
     ├── Proyecto_final_defensa.pdf    # Presentación de la defensa
     ├── defensa/                      # Fuente LaTeX (Beamer) y figuras de la defensa
@@ -244,7 +248,7 @@ Cuaderno: [`TP4.ipynb`](./TP4.ipynb)
     ├── TP2.md · TP2.drawio           # TP2
     ├── TP3.ipynb                     # TP3
     ├── TP4.ipynb                     # TP4
-    ├── notebooks/                    # Notebook de configuración del entorno
+    ├── notebooks/                    # Versión extendida del proyecto final y notebook de configuración
     ├── requirements.txt
     └── README.md
 
