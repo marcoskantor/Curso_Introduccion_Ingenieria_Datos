@@ -50,7 +50,7 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | Código auxiliar y DDL | [`src/`](./src/) (extracción, calidad, momentos de OpenCV, carga de las bases, gráficos) y [`sql/`](./sql/) (esquema transaccional comentado columna por columna, almacén y su carga); el cuaderno los clona del repositorio |
 | Diagramas | [`docs/img/er_oltp.png`](./docs/img/er_oltp.png) (entidad-relación) y [`docs/img/dw.png`](./docs/img/dw.png) (almacén), generados desde TikZ con [`defensa/diagramas/exportar.py`](./defensa/diagramas/exportar.py) |
 | Versión extendida (anexo) | [`notebooks/Proyecto_final_extendido.ipynb`](./notebooks/Proyecto_final_extendido.ipynb): mismo pipeline con el código en línea, análisis exploratorio completo y todas las figuras; genera las mismas bases |
-| Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
+| Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab, con un enlace para abrirlo en una pestaña nueva |
 | Presentación de la defensa (PDF, **19 diapositivas para 20 minutos** + 25 de anexo para el coloquio) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
 | Datos crudos | [`data/raw/lumbar-spine-vpxwf-v1-yolov8.zip`](./data/raw/lumbar-spine-vpxwf-v1-yolov8.zip) · [`data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip`](./data/raw/nhanes-l1-l5-v1-coco-anotaciones.zip) |
 
