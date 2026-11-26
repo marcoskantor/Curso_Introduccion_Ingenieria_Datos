@@ -84,7 +84,8 @@ def orientacion_y_orden(t: pd.DataFrame):
 
 def procesar_nhanes(img2: pd.DataFrame, anot2: pd.DataFrame, clases: list):
     """Mismo control de dominio que Lumbar Spine, adaptado a cajas: clases inválidas, geometría inválida,
-    duplicados, orientación de la radiografía y orden L1->L5 a lo largo de la columna."""
+    duplicados, orientación de la radiografía y orden L1->L5 a lo largo de la columna (orden_coherente).
+    Los atípicos de forma no se evalúan en cajas: es_atipico queda NULL."""
     bit2 = [("Cajas leídas", len(anot2))]
     antes = len(anot2)
     anot2 = anot2[anot2["clase"].isin(clases)].copy()
@@ -108,8 +109,10 @@ def procesar_nhanes(img2: pd.DataFrame, anot2: pd.DataFrame, clases: list):
     anot2 = anot2.sort_index()
     inc2 = roto2.reindex(anot2.index).fillna(False).astype(bool)
     anot2["orden_coherente"] = (~inc2).astype("int8")
-    anot2["es_atipico"] = inc2.astype("int8")
-    anot2["motivo_atipico"] = np.where(inc2, "rompe el orden L1→L5 a lo largo de la columna", None)
+    # Una caja estirada no tiene forma: el control de atípicos de forma NO se aplica. Se guarda NULL ("no evaluado"),
+    # no 0: un 0 diría "evaluada y normal" y sumaría 22 mil anotaciones sanas que nadie revisó (cero estructural).
+    anot2["es_atipico"] = pd.array([pd.NA] * len(anot2), dtype="Int8")
+    anot2["motivo_atipico"] = None
     img2["orientacion"] = img2["archivo"].map(orient2)
     img2["anotada"] = img2["archivo"].isin(anot2["archivo"]).astype("int8")
     for c in ["diagnostico", "sexo", "edad", "nivel_listesis", "formato", "canales", "profundidad_bits", "tamano_kb"]:

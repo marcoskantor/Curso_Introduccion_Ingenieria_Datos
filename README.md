@@ -47,7 +47,8 @@ Todos los notebooks se ejecutan en Google Colab con *Entorno de ejecución → E
 | Componente | Archivo |
 |---|---|
 | Entregable técnico (Colab reproducible, 14 páginas impreso) | [`Proyecto_final.ipynb`](./Proyecto_final.ipynb): proceso completo, justificaciones y el código que demuestra cada requisito |
-| Código auxiliar y DDL | [`src/`](./src/) (extracción, calidad, momentos de OpenCV, carga de las bases, gráficos) y [`sql/`](./sql/) (esquemas transaccional y del almacén); el cuaderno los clona del repositorio |
+| Código auxiliar y DDL | [`src/`](./src/) (extracción, calidad, momentos de OpenCV, carga de las bases, gráficos) y [`sql/`](./sql/) (esquema transaccional comentado columna por columna, almacén y su carga); el cuaderno los clona del repositorio |
+| Diagramas | [`docs/img/er_oltp.png`](./docs/img/er_oltp.png) (entidad-relación) y [`docs/img/dw.png`](./docs/img/dw.png) (almacén), generados desde TikZ con [`defensa/diagramas/exportar.py`](./defensa/diagramas/exportar.py) |
 | Versión extendida (anexo) | [`notebooks/Proyecto_final_extendido.ipynb`](./notebooks/Proyecto_final_extendido.ipynb): mismo pipeline con el código en línea, análisis exploratorio completo y todas las figuras; genera las mismas bases |
 | Tablero interactivo (Streamlit) | [`app.py`](./app.py) — se muestra al final del notebook vía proxy nativo de Colab |
 | Presentación de la defensa (PDF, **19 diapositivas para 20 minutos** + 25 de anexo para el coloquio) | [`Proyecto_final_defensa.pdf`](./Proyecto_final_defensa.pdf) — fuente LaTeX en [`defensa/`](./defensa/) (compilar con XeLaTeX); las figuras se regeneran desde el almacén con `python defensa/figuras.py proyecto_final` |
@@ -97,78 +98,47 @@ flowchart LR
 |---|---|---|
 | Extracción | Dos fuentes por URL pública, verificación SHA-256, idempotente | 2 zips crudos |
 | Transformación | Inventario por imagen, metadatos clínicos por expresiones regulares, parsing de polígonos (fórmula de Gauss), carga optimizada (`usecols` + tipado) | staging CSV |
-| Calidad | Faltantes en tres niveles, orientación de cada radiografía (vertical / girada 90° / invertida), duplicados (imagen, vértebra), inválidos geométricos, atípicos (Shapiro-Wilk → Tukey 2·IQR, Mahalanobis robusta) sobre variables normalizadas por imagen, control del orden craneocaudal L1→L5 | marcas de calidad |
+| Calidad | Nulos clasificados como **estructurales** (no aplican o la fuente no los registra) o **perdidos** (deberían existir), con una decisión por caso; ceros reales separados de los que codificaban «no evaluado» (pasan a NULL); orientación de cada radiografía (vertical / girada 90° / invertida), duplicados (imagen, vértebra), inválidos geométricos, atípicos (Shapiro-Wilk → Tukey 2·IQR, Mahalanobis robusta) sobre variables normalizadas por imagen, control del orden craneocaudal L1→L5 | marcas de calidad |
 | Descriptores OpenCV | Momentos de cada contorno (`cv2.moments`): área, centroide, **inclinación** por momentos centrales, excentricidad, circularidad, solidez, momentos de Hu; formato de píxel (formato, canales, bits) e intensidad y contraste dentro de cada polígono; segmentos intervertebrales y Cobb aproximado | columnas nuevas |
 | Análisis exploratorio | Resoluciones y vértebras por imagen en las dos fuentes, matriz de correlación de Spearman de los descriptores, ACP (varianza explicada y biplot por vértebra y por diagnóstico), vectores de medias por diagnóstico y distancias entre perfiles, ejemplos de orientación en NHANES | figuras en el notebook |
-| Carga transaccional | SQLite en 3FN: `dataset`, `diagnostico`, `region`, `vertebra`, `imagen` (con formato de píxel y vista), `anotacion` (PK compuesta), `vertice` (PK compuesta) | `spine_oltp.db` |
-| Almacén | Copo de nieve con **dos tablas de hechos** (constelación): `fact_vertebra_anotada` (grano vértebra) y `fact_segmento` (grano segmento intervertebral), ambas con PK compuesta por sus dimensiones; `dim_imagen → dim_dataset / dim_diagnostico`, `dim_vertebra → dim_region`, `dim_segmento → dim_vertebra` | `spine_dw.db` |
+| Carga transaccional | SQLite en 3FN: `dataset`, `diagnostico`, `region`, `vertebra`, `imagen`, `anotacion` (entidad asociativa de la N:M imagen–vértebra, PK compuesta) y `vertice` (PK compuesta) | `spine_oltp.db` |
+| Almacén | Diseñado desde las preguntas «¿cuántos … por …?»: **tres tablas de hechos** con dimensiones compartidas (constelación) — `fact_imagen` (grano radiografía), `fact_vertebra_anotada` (vértebra en una imagen) y `fact_segmento` (segmento) —, medidas aditivas (conteos y marcas 0/1) y la jerarquía `dim_region → dim_vertebra → dim_segmento` normalizada (copo de nieve) | `spine_dw.db` |
 | Visualización | Tablero con veredicto ajustable, cobertura imagen × vértebra, balance, progresión anatómica, atípicos, representatividad y alineación (P5) | `app.py` |
 
 
 ### Modelo transaccional (`spine_oltp.db`)
 
-```mermaid
-erDiagram
-    dataset    ||--o{ imagen    : contiene
-    diagnostico |o--o{ imagen   : clasifica
-    region     ||--o{ vertebra  : agrupa
-    imagen     ||--o{ anotacion : tiene
-    vertebra   ||--o{ anotacion : identifica
-    anotacion  ||--|{ vertice   : "se dibuja con"
-    imagen {
-        int imagen_id PK
-        int dataset_id FK
-        int diagnostico_id FK
-        text archivo
-        text vista
-        text orientacion
-    }
-    anotacion {
-        int imagen_id PK
-        int vertebra_id PK
-        text geometria
-        int es_atipico
-        int orden_coherente
-    }
-    vertice {
-        int imagen_id PK
-        int vertebra_id PK
-        int orden PK
-        real x_px
-        real y_px
-    }
-```
+![Modelo entidad-relación de la base transaccional](./docs/img/er_oltp.png)
 
-### Almacén (`spine_dw.db`): constelación de hechos en copo de nieve
+| Relación | Cardinalidad | Llave que la implementa |
+|---|---|---|
+| `dataset` → `imagen` | 1 : N (una fuente, muchas radiografías) | `imagen.dataset_id` |
+| `diagnostico` → `imagen` | 1 : N (a lo sumo un diagnóstico por radiografía; NULL en NHANES) | `imagen.diagnostico_id` |
+| `region` → `vertebra` | 1 : N | `vertebra.region_id` |
+| `imagen` ↔ `vertebra` | **N : M** (hasta 5 vértebras por imagen; cada vértebra en miles de imágenes) | entidad asociativa `anotacion`, PK `(imagen_id, vertebra_id)` |
+| `anotacion` → `vertice` | 1 : N (3 o más vértices; 4 en las cajas) | `vertice.(imagen_id, vertebra_id)` |
 
-```mermaid
-erDiagram
-    dim_dataset     ||--o{ dim_imagen : ""
-    dim_diagnostico ||--o{ dim_imagen : ""
-    dim_region      ||--o{ dim_vertebra : ""
-    dim_vertebra    ||--o{ dim_segmento : "superior / inferior"
-    dim_imagen      ||--o{ fact_vertebra_anotada : ""
-    dim_vertebra    ||--o{ fact_vertebra_anotada : ""
-    dim_imagen      ||--o{ fact_segmento : ""
-    dim_segmento    ||--o{ fact_segmento : ""
-    fact_vertebra_anotada {
-        int imagen_key PK
-        int vertebra_key PK
-        real area_norm
-        real inclinacion
-        real excentricidad
-        int es_atipico
-    }
-    fact_segmento {
-        int imagen_key PK
-        int segmento_key PK
-        real delta_inclinacion
-        real desplazamiento_rel
-        real separacion_rel
-    }
-```
+Cada columna está comentada en [`sql/oltp.sql`](./sql/oltp.sql): qué es, de qué variable de la fuente sale (nombre de archivo, línea YOLOv8, anotación COCO, cabecera de la imagen o cálculo del ETL) y, si admite NULL, si el nulo es estructural o perdido.
 
-**Grano y medidas del almacén.** `fact_vertebra_anotada` = una vértebra anotada en una imagen; `fact_segmento` = un segmento intervertebral en una imagen. Las medidas son **atómicas** (área normalizada, inclinación, marcas 0/1, ángulo y desplazamiento segmentarios): no se guardan promedios. `AVG` se calcula al consultar y, para cantidades (anotaciones atípicas, imágenes completas), se usan `SUM`/`COUNT`. No hay dimensión tiempo: las radiografías no tienen fecha. El ACP del análisis exploratorio usa **todas** las vértebras con polígono (169); el único *sample* (200 imágenes) es sólo para graficar en el tablero.
+### Almacén (`spine_dw.db`): tres hechos que responden «¿cuántos … por …?»
+
+| | ¿Cuántos … | … por …? (dimensiones) | Medida | Hecho |
+|---|---|---|---|---|
+| P1 | imágenes completas L1–L5; anotaciones | fuente; vértebra | `SUM(completa)`; `SUM(anotaciones)` | `fact_imagen`; `fact_vertebra_anotada` |
+| P2 | anotaciones de forma atípica | vértebra | `SUM(es_atipico)` | `fact_vertebra_anotada` |
+| P3 | anotaciones fuera de orden; imágenes | vértebra, fuente; orientación, fuente | `SUM(1 − orden_coherente)`; `SUM(imagenes)` | `fact_vertebra_anotada`; `fact_imagen` |
+| P4 | imágenes y completas | diagnóstico, sexo, grupo de edad | `SUM(imagenes)`, `SUM(completa)` | `fact_imagen` |
+| P5 | grados de inclinación (Cobb = MAX − MIN) | diagnóstico, vista, segmento | `inclinacion`, `delta_inclinacion` (se promedian) | `fact_vertebra_anotada`, `fact_segmento` |
+
+![Almacén de datos](./docs/img/dw.png)
+
+**Grano y medidas del almacén.** `fact_imagen` = una radiografía; `fact_vertebra_anotada` = una vértebra anotada en una imagen; `fact_segmento` = un segmento intervertebral en una imagen. Las medidas aditivas son conteos (`imagenes`, `anotaciones`, `segmentos`) y marcas 0/1 (`anotada`, `completa`, `es_atipico`, `orden_coherente`), que se suman; los descriptores geométricos se guardan atómicos y se promedian al consultar (no se guardan promedios). Diagnóstico, sexo, grupo de edad y orientación tienen el miembro «sin dato» (clave 0): un faltante se cuenta como categoría y nunca como 0. No hay dimensión tiempo: las radiografías no tienen fecha. El ACP del análisis exploratorio usa **todas** las vértebras con polígono (169); el único *sample* (200 imágenes) es sólo para graficar en el tablero.
+
+### Correcciones de la defensa (25/11/2026)
+
+- **Modelo entidad-relación:** diagrama nuevo con todos los atributos, PK y FK, la cardinalidad de cada relación y la columna que la implementa (p. ej. `dataset` 1:N `imagen` por `imagen.dataset_id`); la relación N:M imagen–vértebra se muestra resuelta por la entidad asociativa `anotacion`. `geometria` pasó de `anotacion` a `dataset` (dependía sólo de la fuente). Diccionario «variable de la fuente → atributo» en el cuaderno y en el DDL.
+- **Almacén:** rediseñado desde las preguntas: cada «por» es una dimensión y cada «cuántos» una medida aditiva. Se agregó `fact_imagen` (P1, P3 y P4 se respondían consultando una dimensión) y las dimensiones `dim_sexo`, `dim_grupo_edad`, `dim_vista` y `dim_orientacion`, compartidas por los hechos.
+- **Nulos y ceros:** cada faltante se clasifica como estructural o perdido, con su decisión (descartar, imputar con parecidos o conservar marcado). Se corrigieron dos ceros que eran nulos: `es_atipico = 0` en las cajas de NHANES (no evaluadas → NULL) y «0 mujeres» en NHANES (sexo «sin dato»).
 
 ## Resultados
 
@@ -242,7 +212,8 @@ Cuaderno: [`TP4.ipynb`](./TP4.ipynb)
     ├── sql/                          # DDL de la base transaccional y del almacén
     ├── app.py                        # Tablero Streamlit
     ├── Proyecto_final_defensa.pdf    # Presentación de la defensa
-    ├── defensa/                      # Fuente LaTeX (Beamer) y figuras de la defensa
+    ├── defensa/                      # Fuente LaTeX (Beamer), figuras y diagramas TikZ (diagramas/) de la defensa
+    ├── docs/img/                     # Diagramas ER y del almacén (PNG) que muestran el cuaderno y este README
     ├── data/raw/                     # Datos crudos del proyecto final (CC BY 4.0): Lumbar Spine y NHANES
     ├── TP1.ipynb                  # TP1
     ├── TP2.md · TP2.drawio           # TP2

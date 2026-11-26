@@ -260,11 +260,11 @@
     \node[paso, right=0.45cm of e2] (e3) {Parsing de polígonos\\(Gauss)};
     \node[paso, right=0.45cm of e3] (e4) {Staging CSV\\anotaciones, vértices};
     \node[paso, below=1.2cm of e4] (t1) {Carga optimizada\\\texttt{usecols} + tipos};
-    \node[paso, left=0.45cm of t1] (t2) {Faltantes y duplicados};
+    \node[paso, left=0.45cm of t1] (t2) {Nulos, ceros y duplicados};
     \node[paso, left=0.45cm of t2] (t3) {Atípicos y coherencia anatómica};
     \node[paso, left=0.45cm of t3] (t4) {Momentos OpenCV y variables sin escala};
     \node[paso, below=1.2cm of t4, fill=itba, text=white] (c1) {SQLite transaccional (3FN)};
-    \node[paso, right=0.45cm of c1, fill=itba, text=white] (c2) {SQLite almacén (copo de nieve)};
+    \node[paso, right=0.45cm of c1, fill=itba, text=white] (c2) {SQLite almacén (3 hechos)};
     \node[paso, right=0.45cm of c2, fill=itba, text=white] (c3) {Tablero Streamlit};
     \node[paso, right=0.45cm of c3, draw=gris, fill=white] (c4) {Respuestas P1–P5 en SQL};
     \draw[flecha] (e1)--(e2); \draw[flecha] (e2)--(e3); \draw[flecha] (e3)--(e4); \draw[flecha] (e4)--(t1);
@@ -277,27 +277,33 @@
 \end{frame}
 
 
-\begin{frame}{Faltantes no aleatorios y un solo duplicado}{Se descarta sólo lo imposible; lo raro se marca}
+\begin{frame}{Nulos: estructurales o perdidos, y una decisión para cada uno}{Un nulo es un dato no procesable; un 0 no es un nulo}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
+    \begin{column}{0.58\textwidth}
       \scriptsize
-      \renewcommand{\arraystretch}{1.15}
-      \begin{tabularx}{\linewidth}{@{}p{1.1cm}Xp{2.4cm}@{}}
+      \renewcommand{\arraystretch}{1.12}
+      \begin{tabularx}{\linewidth}{@{}Xp{1.75cm}p{2.55cm}@{}}
         \toprule
-        Nivel & Qué falta & Decisión \\ \midrule
-        Imagen & 16 de 50 sin anotaciones & \textbf{se conservan} (\texttt{anotada = 0}) \\
-        Vértebra & imagen sin alguna de L1--L5 & se mide la \textbf{completitud} \\
-        Atributo & coordenadas o clase inválidas (0) & \textbf{descarte} \\
-        Metadato & sexo no identificable (1) & \textbf{nulo}, sin imputar \\ \bottomrule
-      \end{tabularx}\\[1ex]
+        Atributo (casos) & Tipo & Decisión \\ \midrule
+        Coordenadas o clase (0) & perdido, no procesable & \textbf{descarte} \\
+        Imagen sin anotar (16 de 50) & perdido \textbf{no aleatorio} & \textbf{se conserva} (\texttt{anotada = 0}) \\
+        L1 ausente (1) & perdido & se conserva; su L2 duplicada es probable L1 mal etiquetada \\
+        Sexo «N» en el nombre (1) & perdido por omisión & «sin dato»; imputar inventaría un paciente \\
+        Clínica y píxeles de NHANES (4.436) & estructural: no se publica & «sin dato» \\
+        Forma de las cajas (22.149) & estructural: no aplica & NULL; P2 y P5 con Lumbar Spine \\ \bottomrule
+      \end{tabularx}\\[0.8ex]
       \footnotesize
-      \textbf{No se imputa} geometría ni datos clínicos: inventaría vértebras o pacientes.\\[0.8ex]
-      \textbf{Duplicado:} en \texttt{N20-S-79-F} la L2 aparece dos veces; se conserva la más cercana a la posición mediana de L2: 170 $\rightarrow$ \textbf{169} anotaciones.
+      \textbf{Perdido:} descartar, \textbf{imputar con parecidos} o conservar marcado. \textbf{Estructural:} no se completa.
     \end{column}
-    \begin{column}{0.47\textwidth}
-      \includegraphics[width=\linewidth]{fig/cobertura.pdf}\\[0.3ex]
+    \begin{column}{0.39\textwidth}
+      \begin{block}{Ceros revisados}
+        \scriptsize
+        \textbf{Eran nulos:} \texttt{es\_atipico = 0} en 22.149 cajas no evaluadas $\Rightarrow$ \textbf{NULL}; «0 mujeres» en NHANES $\Rightarrow$ «sin dato».\\[0.5ex]
+        \textbf{Reales:} vértices sobre el borde (x o y = 0); \texttt{vertebras\_anotadas = 0}.\\[0.5ex]
+        \textbf{Estructurales:} NHANES $\times$ frente y listesis $\times$ frente valen 0 por diseño.
+      \end{block}
       \begin{block}{Hallazgo}
-        \footnotesize Las 16 imágenes sin anotar son \textbf{todas} de escoliosis (9) o del código «S» (7): el faltante \textbf{no es aleatorio} (MNAR). Descartarlas sin registrarlo ocultaría un sesgo de cobertura.
+        \scriptsize Las 16 imágenes sin anotar son \textbf{todas} de escoliosis (9) o del código «S» (7): faltante \textbf{no aleatorio}. Descartarlas ocultaría un sesgo de cobertura.
       \end{block}
     \end{column}
   \end{columns}
@@ -391,70 +397,31 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{Siete tablas, dos con claves compuestas}{Modelo entidad-relación de la base transaccional (SQLite)}
+\begin{frame}{Modelo entidad-relación: atributos, llaves y cardinalidades}{Base transaccional (SQLite, 3FN) · debajo de cada relación, la columna que la implementa}
   \centering
-  \resizebox{\linewidth}{!}{%
-  \begin{tikzpicture}[node distance=0.5cm]
-    \tab{dataset}{(0,2.6)}{\textbf{PK} dataset\_id\\nombre, fuente, version\\licencia, sha256}
-    \tab{diagnostico}{(0,0)}{\textbf{PK} diagnostico\_id\\nombre}
-    \tab[3.2cm]{imagen}{(4.1,1.3)}{\textbf{PK} imagen\_id\\\textbf{FK} dataset\_id\\\textbf{FK} diagnostico\_id\\archivo, split, vista, orientación\\ancho\_px, alto\_px, anotada\\formato, canales, bits, tamaño\\sexo, edad, nivel\_listesis}
-    \tab[3.3cm]{anotacion}{(8.4,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\es\_atipico\\orden\_coherente\\motivo\_atipico\\geometria}
-    \tab[3.3cm]{vertice}{(12.6,1.3)}{\textbf{PK,FK} imagen\_id\\\textbf{PK,FK} vertebra\_id\\\textbf{PK} orden\\x\_px, y\_px}
-    \tab{vertebra}{(8.4,-1.6)}{\textbf{PK} vertebra\_id\\codigo, orden\_craneocaudal\\\textbf{FK} region\_id}
-    \tab{region}{(4.1,-1.6)}{\textbf{PK} region\_id\\nombre}
-    \draw[rel] (dataset.east) -- (imagen.west |- dataset.east) node[pos=0.5, above, font=\tiny, text=gris] {1:N};
-    \draw[rel] (diagnostico.east) -- (imagen.west |- diagnostico.east) node[pos=0.5, above, font=\tiny, text=gris] {1:N};
-    \draw[rel] (imagen.east) -- (anotacion.west) node[midway, above, font=\tiny, text=gris] {1:N};
-    \draw[rel] (anotacion.east) -- (vertice.west) node[midway, above, font=\tiny, text=gris] {1:N};
-    \draw[rel] (vertebra.north) -- (anotacion.south) node[midway, right, font=\tiny, text=gris] {1:N};
-    \draw[rel] (region.east) -- (vertebra.west) node[midway, above, font=\tiny, text=gris] {1:N};
-  \end{tikzpicture}}\\[0.8ex]
-  {\footnotesize Una sola clave por tabla; \texttt{anotacion} y \texttt{vertice} usan \textbf{claves compuestas}. 3FN: el polígono es un grupo repetitivo ($\Rightarrow$ una fila por vértice), nada depende de media clave y no se guardan derivados (anexo B17).}
+  \includegraphics[width=\linewidth,height=6.1cm,keepaspectratio]{fig/er_oltp.pdf}\\[0.4ex]
+  {\scriptsize \texttt{imagen} \textbf{N:M} \texttt{vertebra} $\Rightarrow$ entidad asociativa \texttt{anotacion} (PK compuesta) · \texttt{geometria} en \texttt{dataset} (2FN).}
 \end{frame}
 
-\begin{frame}{Copo de nieve con dos tablas de hechos}{Constelación de hechos: comparten dimensiones, cada una con su grano}
+\begin{frame}{Almacén: tres hechos que responden «¿cuántos … por …?»}{Cada «por» es una dimensión; cada «cuántos», una medida aditiva}
   \centering
-  \resizebox{!}{4.5cm}{%
-      \begin{tikzpicture}
-        \node[hechos=3.7cm] (f) at (0,1.9) {\textcolor{white}{\textbf{fact\_vertebra\_anotada}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} vertebra\_key\\[0.3ex]area\_norm, alto\_norm, aspecto, relleno\\cy\_rel, \textbf{inclinacion}, excentricidad\\circularidad, solidez, hu1, hu2\\intensidad\_media, contraste\\es\_atipico, orden\_coherente, geometria};
-        \node[hechos=3.7cm] (fs) at (0,-2.2) {\textcolor{white}{\textbf{fact\_segmento}}\nodepart{two}\textbf{PK,FK} imagen\_key\\\textbf{PK,FK} segmento\_key\\[0.3ex]delta\_inclinacion\\desplazamiento\_rel\\separacion\_rel};
-        \node[tabla=3.4cm, anchor=west] (di) at (4.6,0) {\textcolor{white}{\textbf{dim\_imagen}}\nodepart{two}\textbf{PK} imagen\_key\\split, resolucion, vista\\orientacion, formato, bits\\sexo, edad, grupo\_edad\\anotada, completa\\\textbf{FK} dataset\_key\\\textbf{FK} diagnostico\_key};
-        \node[tabla=2.6cm, anchor=west] (dd) at (8.6,1.4) {\textcolor{white}{\textbf{dim\_dataset}}\nodepart{two}\textbf{PK} dataset\_key\\nombre, licencia\\(2 fuentes)};
-        \node[tabla=2.6cm, anchor=west] (dg) at (8.6,-1.4) {\textcolor{white}{\textbf{dim\_diagnostico}}\nodepart{two}\textbf{PK} diagnostico\_key\\nombre};
-        \node[tabla=2.9cm, anchor=east] (dv) at (-2.9,1.9) {\textcolor{white}{\textbf{dim\_vertebra}}\nodepart{two}\textbf{PK} vertebra\_key\\codigo, orden\\\textbf{FK} region\_key};
-        \node[tabla=2.9cm, anchor=east] (ds) at (-2.9,-2.2) {\textcolor{white}{\textbf{dim\_segmento}}\nodepart{two}\textbf{PK} segmento\_key\\nombre (L1-L2 …)\\\textbf{FK} vertebra\_sup\_key\\\textbf{FK} vertebra\_inf\_key};
-        \node[tabla=2.3cm, anchor=south] (dr) at ([yshift=0.7cm]dv.north) {\textcolor{white}{\textbf{dim\_region}}\nodepart{two}\textbf{PK} region\_key\\nombre};
-        \draw[rel] (di.west) -- (f.east);
-        \draw[rel] (di.west) -- (fs.east);
-        \draw[rel] (dv.east) -- (f.west);
-        \draw[rel] (ds.east) -- (fs.west);
-        \draw[rel] (dv.south) -- (ds.north);
-        \draw[rel] (dr.south) -- (dv.north);
-        \draw[rel] (dd.west) -- ([yshift=0.5cm]di.east);
-        \draw[rel] (dg.west) -- ([yshift=-0.5cm]di.east);
-      \end{tikzpicture}}\\[0.8ex]
-  {\scriptsize \textbf{Grano:} \texttt{fact\_vertebra\_anotada} = una vértebra en una imagen; \texttt{fact\_segmento} = un segmento intervertebral en una imagen. Medidas atómicas (los promedios se calculan al consultar) · PK compuestas por las claves de sus dimensiones en ambas tablas de hechos.}
+  \includegraphics[height=6.35cm]{fig/dw.pdf}
 \end{frame}
 
-\begin{frame}{Cada métrica del almacén responde a una pregunta}
-  \scriptsize
-  \renewcommand{\arraystretch}{1.1}
-  \begin{tabularx}{\linewidth}{@{}lXl@{}}
+\begin{frame}{Cada pregunta: qué se cuenta y por qué dimensiones}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}p{3.5cm}@{}}
     \toprule
-    Métrica / atributo & Cálculo en el ETL & Responde \\ \midrule
-    \texttt{COUNT(*)} sobre hechos & cantidad de anotaciones & \textbf{\color{itba}P1} \\
-    \texttt{dim\_imagen.completa} & 1 si la imagen tiene las 5 vértebras & \textbf{\color{itba}P1} \\
-    \texttt{area\_norm} & área del polígono / mediana del área de las vértebras de la misma imagen & \textbf{\color{itba}P2}, \textbf{\color{itba}P3} \\
-    \texttt{aspecto}, \texttt{relleno} & ancho/alto de la caja; área del polígono / área de la caja & \textbf{\color{itba}P2} \\
-    \texttt{es\_atipico}, \texttt{motivo\_atipico} & marca de calidad (Tukey, Mahalanobis, orden) & \textbf{\color{itba}P2} \\
-    \texttt{alto\_norm}, \texttt{cy\_rel} & alto relativo a sus vecinas; centroide vertical / alto de la imagen & \textbf{\color{itba}P3} \\
-    \texttt{orden\_coherente} & 1 si respeta el orden L1$\rightarrow$L5 & \textbf{\color{itba}P3} \\
-    diagnóstico, sexo, \texttt{grupo\_edad} & extraídos del nombre de archivo & \textbf{\color{itba}P4} \\
-    \texttt{excentricidad}, \texttt{circularidad}, \texttt{solidez}, \texttt{hu1/2} & momentos del contorno (OpenCV) & \textbf{\color{itba}P2} \\
-    \texttt{intensidad\_media}, \texttt{contraste} & píxeles dentro del polígono (máscara OpenCV) & \textbf{\color{itba}P2} \\
-    \texttt{inclinacion}; Cobb aproximado & eje principal por momentos; \texttt{MAX $-$ MIN} por imagen en la consulta & \textbf{\color{itba}P5} \\
-    \texttt{delta\_inclinacion}, \texttt{desplazamiento\_rel}, \texttt{separacion\_rel} & en \texttt{fact\_segmento}: ángulo, deslizamiento y espacio entre vecinas & \textbf{\color{itba}P5} \\ \bottomrule
-  \end{tabularx}
+    & ¿Cuántos … & … por …? (dimensiones) & Medida & Hecho \\ \midrule
+    \textbf{\color{itba}P1} & imágenes completas; anotaciones & fuente; vértebra & \texttt{SUM(completa)}; \texttt{SUM(anotaciones)} & \texttt{fact\_imagen}; \texttt{fact\_vertebra\_anotada} \\
+    \textbf{\color{itba}P2} & anotaciones de forma atípica & vértebra & \texttt{SUM(es\_atipico)} & \texttt{fact\_vertebra\_anotada} \\
+    \textbf{\color{itba}P3} & fuera de orden; imágenes & vértebra; orientación, fuente & \texttt{SUM(1 - orden\_coherente)}; \texttt{SUM(imagenes)} & \texttt{fact\_vertebra\_anotada}; \texttt{fact\_imagen} \\
+    \textbf{\color{itba}P4} & imágenes y completas & diagnóstico, sexo, grupo de edad & \texttt{SUM(imagenes)}, \texttt{SUM(completa)} & \texttt{fact\_imagen} \\
+    \textbf{\color{itba}P5} & grados (Cobb = MAX $-$ MIN) & diagnóstico, vista, segmento & \texttt{inclinacion} (se promedia) & \texttt{fact\_vertebra\_anotada}, \texttt{fact\_segmento} \\ \bottomrule
+  \end{tabularx}\\[1ex]
+  \footnotesize
+  \textbf{Aditivas} (conteos y marcas 0/1): se suman. \textbf{Descriptores}: atómicos, se promedian al consultar (nunca se guarda un promedio). \textbf{«Sin dato»} (clave 0): el faltante es una categoría, no un cero.
 \end{frame}
 
 \begin{frame}{Veredicto: con NHANES alcanza, enderezando la orientación}
@@ -624,7 +591,7 @@
         \textbf{No:} P2 y P5. Una caja alineada con los ejes no tiene forma ni inclinación; P4 tampoco, porque no trae metadatos clínicos.
       \end{block}
       \vspace{0.6ex}
-      \footnotesize\color{gris}Se integra al mismo modelo: nueva fila en \texttt{dataset}, \texttt{imagen.dataset\_id} y \texttt{anotacion.geometria} = \texttt{caja}.
+      \footnotesize\color{gris}Se integra al mismo modelo: nueva fila en \texttt{dataset}, \texttt{imagen.dataset\_id} y \texttt{dataset.geometria} = \texttt{caja}.
     \end{column}
   \end{columns}
 \end{frame}
@@ -899,7 +866,7 @@
     \end{column}
     \begin{column}{0.32\textwidth}
       \begin{block}{2FN — sin dependencias parciales}
-        \footnotesize Con clave \texttt{(imagen\_id, vertebra\_id)}, la resolución o el sexo dependen sólo de la imagen y viven en \texttt{imagen}; el código y el orden, sólo de la vértebra. En \texttt{anotacion} quedan las marcas de calidad, que dependen del par.
+        \footnotesize Con clave \texttt{(imagen\_id, vertebra\_id)}, la resolución o el sexo dependen sólo de la imagen y viven en \texttt{imagen}; el código y el orden, sólo de la vértebra; el tipo de geometría, sólo de la fuente (\texttt{dataset}). En \texttt{anotacion} quedan las marcas de calidad, que dependen del par.
       \end{block}
     \end{column}
     \begin{column}{0.32\textwidth}
@@ -956,7 +923,7 @@
       \begin{block}{Ejemplo}
         \scriptsize
         \textbf{Contexto.} Una imagen es una radiografía; una vértebra es L1 a L5; una anotación es el contorno de una vértebra en una imagen; un segmento es un par de vértebras consecutivas.\\[0.3ex]
-        \textbf{Grano.} \texttt{fact\_vertebra\_anotada}: una vértebra en una imagen; \texttt{fact\_segmento}: un segmento en una imagen. Medidas atómicas, sin promedios guardados.\\[0.3ex]
+        \textbf{Grano.} \texttt{fact\_imagen}: una radiografía; \texttt{fact\_vertebra\_anotada}: una vértebra en una imagen; \texttt{fact\_segmento}: un segmento. Medidas aditivas (conteos, 0/1) y descriptores atómicos.\\[0.3ex]
         \textbf{Pedido.} Creá las consultas para este diseño de almacén (\texttt{COUNT}/\texttt{SUM} de completas y atípicas, \texttt{AVG} al consultar, Cobb aproximado).
       \end{block}
     \end{column}
@@ -1052,30 +1019,33 @@ roto = (prev.notna() & (anot.cy_rel <= prev)) | \
     \begin{column}{0.56\textwidth}
 \begin{lstlisting}[language=SQL]
 ATTACH DATABASE 'spine_oltp.db' AS oltp;
-INSERT INTO dim_imagen
-SELECT i.imagen_id, i.archivo, i.split, ...,
-       COALESCE(i.sexo, 'sin dato'),
-       CASE WHEN i.edad < 18 THEN '<18' ... END,
-       COUNT(a.vertebra_id),
+INSERT INTO fact_imagen               -- grano: radiografía
+SELECT i.imagen_id, i.dataset_id,
+       COALESCE(i.diagnostico_id, 0), -- miembro "sin dato"
+       sx.sexo_key, ge.grupo_edad_key, ...,
+       1, i.anotada, COUNT(a.vertebra_id),
        CASE WHEN COUNT(a.vertebra_id) = 5
-            THEN 1 ELSE 0 END,           -- completa
-       COALESCE(i.diagnostico_id, 0)    -- miembro "sin dato"
+            THEN 1 ELSE 0 END,         -- completa
+       i.edad
 FROM oltp.imagen i
 LEFT JOIN oltp.anotacion a USING (imagen_id)
+JOIN dim_sexo sx
+  ON sx.sexo = COALESCE(i.sexo, 'sin dato')
+...
 GROUP BY i.imagen_id;
 \end{lstlisting}
     \end{column}
     \begin{column}{0.41\textwidth}
       \small
       \begin{itemize}\setlength{\itemsep}{0.6ex}
-        \item \texttt{LEFT JOIN}: las imágenes sin anotar también entran a la dimensión (P1 las necesita).
+        \item \texttt{LEFT JOIN}: las imágenes sin anotar también entran al hecho (P1 las necesita), con \texttt{completa = 0}.
         \item Hechos: métricas recalculadas desde \texttt{vertice}, la fuente de verdad.
         \item \texttt{area\_norm} y \texttt{alto\_norm} se calculan con la mediana \textbf{por imagen} (\texttt{groupby + transform}).
         \item Validación: conteos por tabla y \texttt{PRAGMA foreign\_key\_check}.
       \end{itemize}
     \end{column}
   \end{columns}
-  \vfill{\scriptsize\color{gris}En el repositorio: \texttt{sql/dw\_dimensiones.sql} y \texttt{src/almacen.py}: \texttt{crear\_dw}.}
+  \vfill{\scriptsize\color{gris}En el repositorio: \texttt{sql/dw\_carga.sql} y \texttt{src/almacen.py}: \texttt{crear\_dw}.}
 \end{frame}
 
 \begin{frame}[fragile]{A5 · Momentos y Cobb aproximado}

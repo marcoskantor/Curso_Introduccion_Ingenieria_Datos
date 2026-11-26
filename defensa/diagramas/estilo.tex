@@ -1,0 +1,37 @@
+% Estilo compartido por los diagramas ER y del almacén (colores ITBA, iguales a defensa.tex).
+\definecolor{itba}{HTML}{02568A}
+\definecolor{itbaclaro}{HTML}{7FA9C8}
+\definecolor{itbafondo}{HTML}{EAF1F7}
+\definecolor{tinta}{HTML}{1F2933}
+\definecolor{gris}{HTML}{8A949E}
+\definecolor{alerta}{HTML}{C0392B}
+\hyphenpenalty=10000 \exhyphenpenalty=10000   % sin división silábica dentro de las tablas
+\tikzset{
+  ent/.style={rectangle split, rectangle split parts=2, draw=itba, line width=0.8pt, rounded corners=2pt,
+              rectangle split part fill={itba,white}, font=\scriptsize, align=left, inner sep=3pt,
+              text width=#1, text=tinta},
+  ent/.default=3.4cm,
+  hecho/.style={ent=#1, rectangle split part fill={alerta,white}, draw=alerta},
+  dimen/.style={ent=#1},
+  linea/.style={draw=itba, line width=0.8pt},
+  fina/.style={draw=itbaclaro, line width=0.7pt},
+  card/.style={font=\footnotesize\bfseries, text=itba, inner sep=1.5pt},
+  verbo/.style={font=\scriptsize\itshape, text=tinta, inner sep=1pt},
+  nm/.style={draw=alerta, line width=0.8pt, dashed},
+  nmtexto/.style={font=\scriptsize\bfseries, text=alerta},
+}
+\newcommand{\pk}[1]{\textbf{PK}~#1}
+\newcommand{\fk}[1]{\textbf{FK}~#1}
+\newcommand{\pkfk}[1]{\textbf{PK·FK}~#1}
+\newcommand{\nulo}[1]{\textcolor{gris}{\textit{#1}}}
+\newcommand{\fkn}[1]{\textbf{FK}~\nulo{#1}}
+\newcommand{\llave}[1]{{\upshape\tiny\color{gris}#1}}
+% \entidad[ancho]{nombre}{(x,y)}{atributos}
+\newcommand{\entidad}[4][3.4cm]{\node[ent=#1] (#2) at #3 {\textcolor{white}{\textbf{\small #2}}\nodepart{two}#4};}
+\newcommand{\dimension}[4][3.2cm]{\node[dimen=#1] (#2) at #3 {\textcolor{white}{\textbf{\small #2}}\nodepart{two}#4};}
+\newcommand{\hechos}[4][3.6cm]{\node[hecho=#1] (#2) at #3 {\textcolor{white}{\textbf{\small #2}}\nodepart{two}#4};}
+% \relacion{inicio}{fin}{verbo}{columna FK}: línea 1 (lado del padre, inicio) —— N (lado del hijo, fin)
+\newcommand{\relacion}[4]{%
+  \draw[linea] (#1) -- (#2)
+    node[pos=0.07, above, card] {1} node[pos=0.93, above, card] {N}
+    node[midway, above=1pt, verbo] {#3} node[midway, below=1pt, verbo, align=center] {\llave{#4}};}

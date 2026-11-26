@@ -78,19 +78,24 @@ def guardar(fig, nombre):
 # ---------------------------------------------------------------- datos (sólo del almacén y de la OLTP)
 dw = sqlite3.connect(WORK / "spine_dw.db")
 H = pd.read_sql("""
-    SELECT f.*, v.codigo AS vertebra, v.orden_craneocaudal AS orden, i.archivo, i.vista, i.orientacion,
-           i.alto_px, d.nombre AS diagnostico, ds.nombre AS dataset
+    SELECT f.*, v.codigo AS vertebra, v.orden_craneocaudal AS orden, i.archivo, vi.vista, o.orientacion,
+           i.alto_px, d.nombre AS diagnostico, ds.nombre AS dataset, ds.geometria
     FROM fact_vertebra_anotada f
     JOIN dim_vertebra v USING (vertebra_key) JOIN dim_imagen i USING (imagen_key)
-    JOIN dim_diagnostico d ON d.diagnostico_key = i.diagnostico_key
-    JOIN dim_dataset ds ON ds.dataset_key = i.dataset_key""", dw)
+    JOIN dim_diagnostico d USING (diagnostico_key) JOIN dim_dataset ds USING (dataset_key)
+    JOIN dim_vista vi USING (vista_key) JOIN dim_orientacion o USING (orientacion_key)""", dw)
 I = pd.read_sql("""
-    SELECT i.*, d.nombre AS diagnostico, ds.nombre AS dataset
-    FROM dim_imagen i JOIN dim_diagnostico d USING (diagnostico_key) JOIN dim_dataset ds USING (dataset_key)""", dw)
+    SELECT f.*, i.archivo, i.ancho_px, i.alto_px, d.nombre AS diagnostico, ds.nombre AS dataset,
+           sx.sexo, ge.grupo AS grupo_edad, vi.vista, o.orientacion
+    FROM fact_imagen f JOIN dim_imagen i USING (imagen_key)
+    JOIN dim_diagnostico d USING (diagnostico_key) JOIN dim_dataset ds USING (dataset_key)
+    JOIN dim_sexo sx USING (sexo_key) JOIN dim_grupo_edad ge USING (grupo_edad_key)
+    JOIN dim_vista vi USING (vista_key) JOIN dim_orientacion o USING (orientacion_key)""", dw)
 S = pd.read_sql("""
-    SELECT f.*, s.nombre AS segmento, d.nombre AS diagnostico, i.vista
-    FROM fact_segmento f JOIN dim_segmento s USING (segmento_key) JOIN dim_imagen i USING (imagen_key)
-    JOIN dim_diagnostico d ON d.diagnostico_key = i.diagnostico_key WHERE i.dataset_key = 1""", dw)
+    SELECT f.*, s.nombre AS segmento, d.nombre AS diagnostico, vi.vista
+    FROM fact_segmento f JOIN dim_segmento s USING (segmento_key)
+    JOIN dim_diagnostico d USING (diagnostico_key) JOIN dim_vista vi USING (vista_key)
+    WHERE f.dataset_key = 1""", dw)
 dw.close()
 
 P = H[H.geometria == "poligono"].copy()            # Lumbar Spine: polígonos

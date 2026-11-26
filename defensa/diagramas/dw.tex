@@ -1,0 +1,74 @@
+% Almacén spine_dw.db (sql/dw.sql): constelación de tres hechos con dimensiones compartidas;
+% jerarquía anatómica normalizada (copo de nieve). Compilar con XeLaTeX.
+\documentclass[border=6pt]{standalone}
+\usepackage{fontspec}
+\usepackage[sfdefault]{FiraSans}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.multipart, calc, backgrounds}
+\input{estilo.tex}
+\newcommand{\suma}[1]{\textbf{\color{alerta}Σ}~#1}
+\newcommand{\prom}[1]{\textbf{\color{gris}x̄}~#1}
+% \tabla{estilo=ancho}{nombre del nodo}{(x,y)}{título}{cuerpo}
+\newcommand{\tabla}[5]{\node[#1] (#2) at #3 {\textcolor{white}{\textbf{\small #4}}\nodepart{two}#5};}
+
+\begin{document}
+\begin{tikzpicture}
+  % ------------------------------------------------------------------ hechos (centro)
+  \tabla{hecho=5.5cm}{fimg}{(8.1,4.35)}{fact\_imagen}{%
+    \textit{Grano: una radiografía} · P1, P3, P4\\[1pt]
+    \pkfk{imagen\_key}\\
+    \fk{dataset\_key, diagnostico\_key}\\
+    \fk{sexo\_key, grupo\_edad\_key}\\
+    \fk{vista\_key, orientacion\_key}\\[1pt]
+    \suma{imagenes, anotada, completa}\\
+    \suma{vertebras\_anotadas, edad}}
+  \tabla{hecho=5.5cm}{fvert}{(8.1,0.0)}{fact\_vertebra\_anotada}{%
+    \textit{Grano: una vértebra en una imagen} · P1, P2, P3\\[1pt]
+    \pkfk{imagen\_key, vertebra\_key}\\
+    \fk{dataset\_key, diagnostico\_key}\\
+    \fk{vista\_key, orientacion\_key}\\[1pt]
+    \suma{anotaciones, es\_atipico, orden\_coherente}\\
+    \prom{area\_norm, alto\_norm, aspecto, relleno,}\\
+    \hspace*{0.9em}cy\_rel, inclinacion, excentricidad, …}
+  \tabla{hecho=5.5cm}{fseg}{(8.1,-4.05)}{fact\_segmento}{%
+    \textit{Grano: un segmento en una imagen} · P5\\[1pt]
+    \pkfk{imagen\_key, segmento\_key}\\
+    \fk{dataset\_key, diagnostico\_key, vista\_key}\\[1pt]
+    \suma{segmentos}\\
+    \prom{delta\_inclinacion, desplazamiento\_rel,}\\
+    \hspace*{0.9em}separacion\_rel}
+
+  % ------------------------------------------------------------------ dimensiones de un solo hecho (izquierda)
+  \tabla{dimen=3.1cm}{dsexo}{(1.7,5.35)}{dim\_sexo}{\pk{sexo\_key}\\sexo {\color{gris}(F, M, sin dato)}}
+  \tabla{dimen=3.1cm}{dedad}{(1.7,3.35)}{dim\_grupo\_edad}{\pk{grupo\_edad\_key}\\grupo, edad\_min, edad\_max}
+  \tabla{dimen=3.1cm}{dvert}{(1.7,0.0)}{dim\_vertebra}{\pk{vertebra\_key}\\codigo, orden\_craneocaudal\\\fk{region\_key}}
+  \tabla{dimen=3.1cm}{dseg}{(1.7,-4.05)}{dim\_segmento}{\pk{segmento\_key}\\nombre {\color{gris}(L1-L2 …)}\\\fk{vertebra\_sup\_key}\\\fk{vertebra\_inf\_key}}
+  \tabla{dimen=1.9cm}{dreg}{(-2.15,0.0)}{dim\_region}{\pk{region\_key}\\nombre}
+
+  % ------------------------------------------------------------------ dimensiones compartidas (derecha)
+  \tabla{dimen=3.3cm}{dds}{(14.75,5.2)}{dim\_dataset}{\pk{dataset\_key}\\nombre, licencia, geometria}
+  \tabla{dimen=3.3cm}{ddiag}{(14.75,3.0)}{dim\_diagnostico}{\pk{diagnostico\_key}\\nombre {\color{gris}(0 = sin dato)}}
+  \tabla{dimen=3.3cm}{dvista}{(14.75,0.95)}{dim\_vista}{\pk{vista\_key}\\vista {\color{gris}(frente, perfil)}}
+  \tabla{dimen=3.3cm}{dori}{(14.75,-1.1)}{dim\_orientacion}{\pk{orientacion\_key}\\orientacion {\color{gris}(0 = sin dato)}}
+  \tabla{dimen=3.3cm}{dimg}{(14.75,-3.75)}{dim\_imagen}{\pk{imagen\_key}\\archivo, split, resolucion\\formato, canales, bits\\nivel\_listesis}
+
+  % ------------------------------------------------------------------ dimensión (1) → hecho (N)
+  \draw[linea] (dsexo.east) -- ([yshift=0.5cm]fimg.west);
+  \draw[linea] (dedad.east) -- ([yshift=-0.5cm]fimg.west);
+  \draw[linea] (dvert.east) -- (fvert.west);
+  \draw[linea] (dseg.east) -- (fseg.west);
+  \draw[linea] (dreg.east) -- (dvert.west);
+  \draw[linea] (dvert.south) -- (dseg.north) node[midway, left, verbo, align=right] {superior e\\inferior};
+  \foreach \d/\f in {dds/fimg, dds/fvert, dds/fseg, ddiag/fimg, ddiag/fvert, ddiag/fseg,
+                     dvista/fimg, dvista/fvert, dvista/fseg, dori/fimg, dori/fvert,
+                     dimg/fimg, dimg/fvert, dimg/fseg}
+    \draw[fina] (\d.west) -- (\f.east);
+
+  % ------------------------------------------------------------------ leyenda
+  \node[anchor=north west, font=\scriptsize, text=tinta, align=left] at (-3.35,-6.3) {%
+    \textcolor{alerta}{\textbf{rojo}}: tablas de hechos · \textcolor{itba}{\textbf{azul}}: dimensiones ·
+    toda relación dimensión\,→\,hecho es \textbf{1\,:\,N} (cada fila de hechos referencia una fila de cada dimensión)\\
+    \suma{} medida aditiva: se suma (\texttt{SUM}) para contar · \prom{} descriptor no aditivo: se promedia o se compara al consultar (nunca se guarda un promedio)\\
+    izquierda: dimensiones de un solo hecho · derecha: dimensiones compartidas (conformadas) · región → vértebra → segmento: jerarquía normalizada (copo de nieve)};
+\end{tikzpicture}
+\end{document}

@@ -1,9 +1,11 @@
 """Tablero Streamlit del Proyecto Final: ¿alcanzan los datos públicos para entrenar el detector de vértebras?
 
-Lee SOLO del almacén `spine_dw.db` (copo de nieve con dos hechos):
-  - fact_vertebra_anotada: grano = una vértebra anotada en una imagen (medidas atómicas de forma y calidad).
-  - fact_segmento:         grano = un segmento intervertebral (par L(i)-L(i+1)) en una imagen.
-  - dimensiones: dim_imagen (-> dim_dataset, dim_diagnostico), dim_vertebra, dim_segmento.
+Lee SOLO del almacén `spine_dw.db` (constelación de tres hechos con dimensiones compartidas):
+  - fact_imagen:           grano = una radiografía (conteos: imágenes, anotadas, completas; P1, P3, P4).
+  - fact_vertebra_anotada: grano = una vértebra anotada en una imagen (marcas 0/1 y descriptores; P1, P2, P3).
+  - fact_segmento:         grano = un segmento intervertebral (par L(i)-L(i+1)) en una imagen (P5).
+  - dimensiones: dim_dataset, dim_diagnostico, dim_sexo, dim_grupo_edad, dim_vista, dim_orientacion, dim_imagen,
+    dim_vertebra (-> dim_region), dim_segmento.
 Todo promedio, conteo o Cobb aproximado se calcula acá con pandas (a partir de medidas atómicas), nunca se guarda.
 Cada sección responde una pregunta: P1 cobertura y balance, P2 calidad geométrica, P3 coherencia anatómica,
 P4 representatividad, P5 alineación. Los filtros de la barra lateral recalculan todo, incluido el veredicto.
@@ -16,10 +18,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-# Constantes del tablero:
-#   DB     : ruta del almacén SQLite (spine_dw.db, junto a este archivo); el tablero NO lee la base transaccional.
-#   ORDEN  : las cinco vértebras, de craneal a caudal, para ordenar ejes y leyendas.
-#   FUENTE : traduce el nombre de dim_dataset al rótulo que se muestra (Lumbar Spine = polígonos, NHANES = cajas).
 # Constantes del tablero:
 #   DB     : ruta del almacén SQLite (spine_dw.db, junto a este archivo); el tablero NO lee la base transaccional.
 #   ORDEN  : las cinco vértebras, de craneal a caudal, para ordenar ejes y leyendas.
@@ -63,44 +61,51 @@ def estilo(fig, conteo=None, maximo=None):
 def cargar():
     """Carga del almacén tres tablas planas para el tablero (una consulta por grano).
 
-    hechos    : una fila por vértebra anotada (fact_vertebra_anotada + dimensiones imagen, vértebra, dataset, diagnóstico).
-    imagenes  : una fila por radiografía (dim_imagen), incluidas las que no tienen anotaciones (P1 las necesita).
+    hechos    : una fila por vértebra anotada (fact_vertebra_anotada + sus dimensiones).
+    imagenes  : una fila por radiografía (fact_imagen + sus dimensiones), incluidas las que no tienen anotaciones
+                (P1 las necesita).
     segmentos : una fila por segmento intervertebral en una imagen (fact_segmento), sólo Lumbar Spine (dataset_key = 1)
                 porque las cajas de NHANES no permiten medir inclinación ni desplazamiento.
     """
     con = sqlite3.connect(DB)
     hechos = pd.read_sql("""
-        SELECT i.archivo, i.split, i.sexo, i.grupo_edad, i.vista, i.orientacion, d.nombre AS diagnostico,
-               ds.nombre AS dataset, v.codigo AS vertebra, v.orden_craneocaudal,
+        SELECT i.archivo, i.split, d.nombre AS diagnostico, ds.nombre AS dataset, ds.geometria,
+               vi.vista, o.orientacion, v.codigo AS vertebra, v.orden_craneocaudal,
                f.area_norm, f.alto_norm, f.aspecto, f.relleno, f.cy_rel, f.inclinacion,
-               f.es_atipico, f.orden_coherente, f.motivo_atipico, f.geometria
+               f.es_atipico, f.orden_coherente, f.motivo_atipico
         FROM fact_vertebra_anotada f
         JOIN dim_vertebra v     USING (vertebra_key)
         JOIN dim_imagen i       USING (imagen_key)
-        JOIN dim_dataset ds     ON ds.dataset_key = i.dataset_key
-        JOIN dim_diagnostico d  ON d.diagnostico_key = i.diagnostico_key""", con)
+        JOIN dim_dataset ds     USING (dataset_key)
+        JOIN dim_diagnostico d  USING (diagnostico_key)
+        JOIN dim_vista vi       USING (vista_key)
+        JOIN dim_orientacion o  USING (orientacion_key)""", con)
     imagenes = pd.read_sql("""
-        SELECT i.archivo, i.split, i.sexo, i.grupo_edad, i.vista, i.orientacion, i.anotada, i.vertebras_anotadas,
-               i.completa, d.nombre AS diagnostico, ds.nombre AS dataset
-        FROM dim_imagen i JOIN dim_diagnostico d ON d.diagnostico_key = i.diagnostico_key
-        JOIN dim_dataset ds ON ds.dataset_key = i.dataset_key""", con)
+        SELECT i.archivo, i.split, sx.sexo, ge.grupo AS grupo_edad, vi.vista, o.orientacion,
+               f.anotada, f.vertebras_anotadas, f.completa, d.nombre AS diagnostico, ds.nombre AS dataset
+        FROM fact_imagen f
+        JOIN dim_imagen i       USING (imagen_key)
+        JOIN dim_dataset ds     USING (dataset_key)
+        JOIN dim_diagnostico d  USING (diagnostico_key)
+        JOIN dim_sexo sx        USING (sexo_key)
+        JOIN dim_grupo_edad ge  USING (grupo_edad_key)
+        JOIN dim_vista vi       USING (vista_key)
+        JOIN dim_orientacion o  USING (orientacion_key)""", con)
     segmentos = pd.read_sql("""
-        SELECT i.archivo, d.nombre AS diagnostico, i.vista, s.nombre AS segmento,
+        SELECT i.archivo, d.nombre AS diagnostico, vi.vista, s.nombre AS segmento,
                f.delta_inclinacion, f.desplazamiento_rel, f.separacion_rel
         FROM fact_segmento f
         JOIN dim_segmento s    USING (segmento_key)
         JOIN dim_imagen i      USING (imagen_key)
-        JOIN dim_diagnostico d ON d.diagnostico_key = i.diagnostico_key
-        WHERE i.dataset_key = 1""", con)
+        JOIN dim_diagnostico d USING (diagnostico_key)
+        JOIN dim_vista vi      USING (vista_key)
+        WHERE f.dataset_key = 1""", con)
     con.close()
     for t in (hechos, imagenes):
         t["fuente"] = t["dataset"].map(FUENTE)
     return hechos, imagenes, segmentos
 
 
-# Las tres tablas planas que usa todo el tablero (se explican en `cargar`):
-#   hechos    -> una fila por vértebra anotada (P2, P3, P5);  imagenes -> una fila por radiografía (P1, P4);
-#   segmentos -> una fila por segmento intervertebral en una imagen (desplazamiento, P5).
 # Las tres tablas planas que usa todo el tablero (se explican en `cargar`):
 #   hechos    -> una fila por vértebra anotada (P2, P3, P5);  imagenes -> una fila por radiografía (P1, P4);
 #   segmentos -> una fila por segmento intervertebral en una imagen (desplazamiento, P5).
@@ -124,7 +129,7 @@ img = imagenes[imagenes["fuente"].isin(fuente_sel) & imagenes["diagnostico"].isi
                & imagenes["sexo"].isin(sexo_sel or imagenes["sexo"].unique())]
 h = hechos[hechos["archivo"].isin(img["archivo"])]
 if not incluir_atipicos:
-    h = h[h["es_atipico"] == 0]
+    h = h[h["es_atipico"] != 1]          # es_atipico NULL (cajas, no evaluadas) no es «atípica»: se conserva
 poly = h[h["geometria"] == "poligono"]
 
 # ------------------------------------------------------------------ encabezado y veredicto
@@ -133,13 +138,9 @@ st.caption("Proyecto Final — Introducción a la Ingeniería de Datos · Marcos
            "Datos: Lumbar Spine (rp-team) y NHANES L1–L5 (main-kybbe), Roboflow Universe, CC BY 4.0 · "
            "Fuente del tablero: almacén `spine_dw.db`")
 
-# Indicadores: `completa` es 1 si la imagen tiene las 5 vértebras (se calculó en dim_imagen); acá se suma.
+# Indicadores: `completa` es la medida 0/1 de fact_imagen (1 si la imagen tiene las 5 vértebras); acá se suma.
 # Variables del bloque de indicadores y veredicto:
-#   completas : cantidad de imágenes filtradas con las 5 vértebras anotadas (suma de dim_imagen.completa).
-#   minimo    : supuesto ajustable (barra lateral) de cuántas imágenes completas hacen falta para entrenar.
-#   por_fuente: tabla resumen (imágenes, anotadas, completas) por fuente de datos.
-# Variables del bloque de indicadores y veredicto:
-#   completas : cantidad de imágenes filtradas con las 5 vértebras anotadas (suma de dim_imagen.completa).
+#   completas : cantidad de imágenes filtradas con las 5 vértebras anotadas (SUM de fact_imagen.completa).
 #   minimo    : supuesto ajustable (barra lateral) de cuántas imágenes completas hacen falta para entrenar.
 #   por_fuente: tabla resumen (imágenes, anotadas, completas) por fuente de datos.
 completas = int(img["completa"].sum())
@@ -147,7 +148,8 @@ c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Imágenes", f"{es(len(img))}")
 c2.metric("Anotadas", f"{es(int(img['anotada'].sum()))}", f"{es(100 * img['anotada'].mean())} %" if len(img) else None)
 c3.metric("Completas L1–L5", f"{es(completas)}")
-c4.metric("Anotaciones atípicas", f"{es(100 * h['es_atipico'].mean(), 1)} %" if len(h) else "—")
+# es_atipico es NULL en las cajas (no evaluadas): el porcentaje es sobre los contornos evaluados, no sobre todo
+c4.metric("Contornos atípicos", f"{es(100 * h['es_atipico'].mean(), 1)} %" if h['es_atipico'].notna().any() else "—")
 c5.metric("Giradas o invertidas", f"{es(int(img['orientacion'].isin(['girada 90°', 'invertida']).sum()))}")
 
 # Veredicto: compara las imágenes completas con el mínimo supuesto (ajustable); verde / amarillo / rojo.
@@ -255,7 +257,10 @@ if len(poly):
         fig.add_hline(y=1, line_dash="dot", line_color=GRIS_TXT, annotation_text="mismo tamaño que sus vecinas")
     fig.update_yaxes(tickformat=".1f")
     st.plotly_chart(estilo(fig), width="stretch")
-atip = h[h["es_atipico"] == 1][["fuente", "archivo", "vertebra", "motivo_atipico"]]
+# Para revisión manual: contornos atípicos (P2) y anotaciones que rompen el orden L1→L5 (P3)
+atip = (h[(h["es_atipico"] == 1) | (h["orden_coherente"] == 0)]
+        .assign(motivo_atipico=lambda d: d["motivo_atipico"].fillna("rompe el orden L1→L5 a lo largo de la columna"))
+        [["fuente", "archivo", "vertebra", "motivo_atipico"]])
 st.markdown(f"**{len(atip)} anotaciones marcadas para revisión manual**")
 st.dataframe(atip, width="stretch", hide_index=True)
 
